@@ -25,6 +25,7 @@ class TestSettings:
     def test_debug_mode_default(self):
         """Test debug mode has default value."""
         assert isinstance(settings.DEBUG, bool)
+
     def test_cors_origins_is_list(self):
         """Test CORS origins is a list."""
         assert isinstance(settings.CORS_ORIGINS, list)
@@ -102,7 +103,7 @@ class TestRateLimit:
         assert limiter is not None
 
 
-from unittest.mock import patch  # noqa: E402
+from unittest.mock import patch
 
 
 class TestLogfireSetup:

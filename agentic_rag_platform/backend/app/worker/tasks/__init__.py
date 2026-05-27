@@ -1,5 +1,5 @@
-
 """Background tasks."""
+
 from app.worker.tasks.rag_tasks import (
     check_scheduled_syncs,
     ingest_document_task,

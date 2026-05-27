@@ -1,4 +1,3 @@
-
 """Rate limiting configuration using slowapi.
 
 Default rate limit: 100 requests per 60 seconds.
@@ -37,6 +36,7 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=[get_default_rate_limit()],
 )
+
 
 # Common rate limit decorators for convenience
 # Usage: @rate_limit_low, @rate_limit_medium, @rate_limit_high

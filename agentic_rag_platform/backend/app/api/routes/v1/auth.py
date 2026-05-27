@@ -5,6 +5,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
+
 from app.api.deps import CurrentUser, UserSvc
 from app.core.exceptions import AuthenticationError
 from app.core.security import (

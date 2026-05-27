@@ -13,6 +13,7 @@ from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db.models.conversation import Conversation, Message
 from app.db.models.user import User
 
@@ -47,16 +48,14 @@ class AdminService:
                     )
                 ).scalar_one()
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("admin_stats_active_users_query_failed")
 
         # Conversations + messages totals — 0 when AI/chat is disabled
         total_conversations = (
             await self.db.execute(select(func.count(Conversation.id)))
         ).scalar_one()
-        total_messages = (
-            await self.db.execute(select(func.count(Message.id)))
-        ).scalar_one()
+        total_messages = (await self.db.execute(select(func.count(Message.id)))).scalar_one()
 
         # Billing — best-effort, only if tables exist + billing on
         credits_30d = 0
@@ -74,27 +73,23 @@ class AdminService:
                 )
             ).scalar_one()
             credits_30d = int(credits_30d_raw)
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("admin_stats_credits_query_failed")
 
         try:
-            from app.db.models.subscription import Subscription
             from app.db.models.plan import Price
+            from app.db.models.subscription import Subscription
 
             # Sum active subscription unit_amount * quantity, monthly equiv.
             stmt = (
-                select(
-                    func.coalesce(
-                        func.sum(Price.amount_cents * Subscription.seats_quantity), 0
-                    )
-                )
+                select(func.coalesce(func.sum(Price.amount_cents * Subscription.seats_quantity), 0))
                 .select_from(Subscription)
                 .join(Price, Price.id == Subscription.price_id)
                 .where(Subscription.status.in_(("active", "trialing")))
                 .where(Price.interval == "month")
             )
             mrr_cents = int((await self.db.execute(stmt)).scalar_one() or 0)
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("admin_stats_mrr_query_failed")
 
         return {
@@ -106,9 +101,7 @@ class AdminService:
             "mrr_cents": mrr_cents,
         }
 
-    async def list_stripe_events(
-        self, *, skip: int = 0, limit: int = 50
-    ) -> tuple[list[Any], int]:
+    async def list_stripe_events(self, *, skip: int = 0, limit: int = 50) -> tuple[list[Any], int]:
         """Page through the Stripe webhook idempotency log.
 
         Returns ([], 0) when the StripeEvent table doesn't exist (billing
@@ -116,17 +109,21 @@ class AdminService:
         """
         try:
             from app.db.models.stripe_event import StripeEvent
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("admin_stats_stripe_event_import_failed")
             return [], 0
 
         total = (await self.db.execute(select(func.count(StripeEvent.id)))).scalar_one()
         rows = (
-            await self.db.execute(
-                select(StripeEvent)
-                .order_by(StripeEvent.created_at.desc())
-                .offset(skip)
-                .limit(limit)
+            (
+                await self.db.execute(
+                    select(StripeEvent)
+                    .order_by(StripeEvent.created_at.desc())
+                    .offset(skip)
+                    .limit(limit)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return list(rows), int(total)

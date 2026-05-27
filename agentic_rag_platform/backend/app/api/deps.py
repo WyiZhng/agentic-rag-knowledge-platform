@@ -2,7 +2,7 @@
 
 Dependency injection factories for services, repositories, and authentication.
 """
-# ruff: noqa: I001, E402 - Imports structured for Jinja2 template conditionals
+# ruff: noqa: I001 - Imports structured for Jinja2 template conditionals
 
 from typing import Annotated
 
@@ -49,6 +49,8 @@ def get_conversation_service(db: DBSession) -> ConversationService:
 ConversationSvc = Annotated[ConversationService, Depends(get_conversation_service)]
 
 from app.services.conversation_share import ConversationShareService
+
+
 def get_conversation_share_service(db: DBSession) -> ConversationShareService:
     """Create ConversationShareService instance with database session."""
     return ConversationShareService(db)
@@ -113,6 +115,8 @@ from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.db.models.user import User, UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
+
+
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     user_service: UserSvc,
@@ -236,7 +240,7 @@ def _extract_ws_auth(websocket: WebSocket) -> tuple[str | None, str | None]:
     app_subprotocol: str | None = None
     for proto in (p.strip() for p in raw.split(",") if p.strip()):
         if proto.startswith(_WS_TOKEN_PROTOCOL_PREFIX):
-            token = proto[len(_WS_TOKEN_PROTOCOL_PREFIX):]
+            token = proto[len(_WS_TOKEN_PROTOCOL_PREFIX) :]
         elif app_subprotocol is None:
             app_subprotocol = proto
     return token, app_subprotocol
@@ -303,11 +307,11 @@ async def get_current_user_ws(
         db.expunge(user)
         return user
 
+
 import secrets
 
 from fastapi.security import APIKeyHeader
 
-from app.core.exceptions import AuthenticationError, AuthorizationError
 
 api_key_header = APIKeyHeader(name=settings.API_KEY_HEADER, auto_error=False)
 
@@ -342,16 +346,19 @@ from app.core.config import settings
 from app.services.rag.retrieval import RetrievalService
 from app.services.rag.vectorstore import PgVectorStore
 
+
 def get_embedding_service(request: Request) -> EmbeddingService:
     """Get embedding service from lifespan state or create new if not available."""
     if request and hasattr(request.state, "embedding_service"):
         return request.state.embedding_service  # type: ignore[no-any-return]
     return EmbeddingService(settings=settings.rag)
 
+
 # Type Alias for the Embedder
 EmbeddingSvc = Annotated[EmbeddingService, Depends(get_embedding_service)]
 
 from app.services.rag.vectorstore import BaseVectorStore
+
 
 def get_vectorstore(request: Request, embedder: EmbeddingSvc) -> BaseVectorStore:
     """Get vector store client from lifespan state or create new."""
@@ -359,11 +366,14 @@ def get_vectorstore(request: Request, embedder: EmbeddingSvc) -> BaseVectorStore
         return request.state.vector_store  # type: ignore[no-any-return]
     return PgVectorStore(settings=settings.rag, embedding_service=embedder)
 
+
 VectorStoreSvc = Annotated[BaseVectorStore, Depends(get_vectorstore)]
+
 
 def get_retrieval_service(vector_store: VectorStoreSvc) -> RetrievalService:
     """Create RetrievalService instance."""
     from app.services.rag.reranker import RerankService
+
     rerank_service = RerankService(settings=settings.rag)
     return RetrievalService(
         vector_store=vector_store,
@@ -371,13 +381,17 @@ def get_retrieval_service(vector_store: VectorStoreSvc) -> RetrievalService:
         rerank_service=rerank_service,
     )
 
+
 RetrievalSvc = Annotated[RetrievalService, Depends(get_retrieval_service)]
+
 
 def get_document_processor() -> DocumentProcessor:
     """Create DocumentProcessor instance."""
     return DocumentProcessor(settings=settings.rag)
 
+
 DocumentProcessorSvc = Annotated[DocumentProcessor, Depends(get_document_processor)]
+
 
 def get_ingestion_service(
     processor: DocumentProcessorSvc,
@@ -385,6 +399,7 @@ def get_ingestion_service(
 ) -> IngestionService:
     """Create IngestionService instance."""
     return IngestionService(processor=processor, vector_store=vector_store)
+
 
 IngestionSvc = Annotated[IngestionService, Depends(get_ingestion_service)]
 from app.services.contact import ContactService
@@ -403,10 +418,10 @@ def get_user_slash_command_service(db: DBSession) -> UserSlashCommandService:
     return UserSlashCommandService(db)
 
 
-UserSlashCommandSvc = Annotated[
-    UserSlashCommandService, Depends(get_user_slash_command_service)
-]
+UserSlashCommandSvc = Annotated[UserSlashCommandService, Depends(get_user_slash_command_service)]
 from app.services.admin import AdminService
+
+
 def get_admin_service(db: DBSession) -> AdminService:
     """Create AdminService instance — used by admin REST routes (always
     available, independent of the optional SQLAdmin UI)."""

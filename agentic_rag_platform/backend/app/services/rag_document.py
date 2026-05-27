@@ -1,4 +1,3 @@
-
 """RAG document service (PostgreSQL async).
 
 Contains business logic for tracking RAG document ingestion, status updates,
@@ -18,11 +17,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.exceptions import BadRequestError, NotFoundError
 from app.db.models.rag_document import RAGDocument
-from app.services.rag.config import get_supported_formats
 from app.repositories import rag_document_repo
 from app.schemas.rag import RAGIngestResponse, RAGTrackedDocumentItem, RAGTrackedDocumentList
 from app.services.file_storage import get_file_storage
-
+from app.services.rag.config import get_supported_formats
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +40,16 @@ class RAGDocumentService:
         return RAGTrackedDocumentList(
             items=[
                 RAGTrackedDocumentItem(
-                    id=str(d.id), collection_name=d.collection_name, filename=d.filename,
-                    filesize=d.filesize, filetype=d.filetype, status=d.status,
-                    error_message=d.error_message, vector_document_id=d.vector_document_id,
-                    chunk_count=d.chunk_count, has_file=bool(d.storage_path),
+                    id=str(d.id),
+                    collection_name=d.collection_name,
+                    filename=d.filename,
+                    filesize=d.filesize,
+                    filetype=d.filetype,
+                    status=d.status,
+                    error_message=d.error_message,
+                    vector_document_id=d.vector_document_id,
+                    chunk_count=d.chunk_count,
+                    has_file=bool(d.storage_path),
                     created_at=d.created_at.isoformat() if d.created_at else None,
                     completed_at=d.completed_at.isoformat() if d.completed_at else None,
                 )
@@ -224,9 +228,7 @@ class RAGDocumentService:
         # Cascade: vector store
         if doc.vector_document_id and ingestion_service:
             try:
-                await ingestion_service.remove_document(
-                    doc.collection_name, doc.vector_document_id
-                )
+                await ingestion_service.remove_document(doc.collection_name, doc.vector_document_id)
             except Exception as e:
                 logger.warning(f"Failed to delete from vector store: {e}")
 

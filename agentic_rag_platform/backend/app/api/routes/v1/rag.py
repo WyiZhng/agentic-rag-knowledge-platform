@@ -1,4 +1,3 @@
-
 """RAG API routes — collection management, search, document upload, sync, status stream.
 
 Routes are HTTP plumbing only. Business logic, file I/O, task dispatch, and Redis
@@ -6,6 +5,7 @@ pub/sub all live in their respective services. Domain exceptions raised by servi
 mapped to HTTP responses by the global exception handlers in
 ``app.api.exception_handlers``; routes do not catch and re-wrap them.
 """
+
 from collections.abc import AsyncIterable
 from typing import Any
 
@@ -13,13 +13,19 @@ from fastapi import APIRouter, File, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from fastapi.sse import EventSourceResponse, ServerSentEvent
 
-from app.api.deps import IngestionSvc, RetrievalSvc, VectorStoreSvc
-from app.api.deps import CurrentAdmin, CurrentUser
-from app.api.deps import RAGDocumentSvc, RAGSyncSvc, SyncSourceSvc
-from app.api.deps import RAGStatusSvc
+from app.api.deps import (
+    CurrentAdmin,
+    CurrentUser,
+    IngestionSvc,
+    RAGDocumentSvc,
+    RAGStatusSvc,
+    RAGSyncSvc,
+    RetrievalSvc,
+    SyncSourceSvc,
+    VectorStoreSvc,
+)
 from app.core.config import settings
 from app.core.exceptions import NotFoundError
-from app.services.rag.config import get_supported_formats
 from app.schemas.rag import (
     RAGCollectionInfo,
     RAGCollectionList,
@@ -42,6 +48,7 @@ from app.schemas.sync_source import (
     SyncSourceRead,
     SyncSourceUpdate,
 )
+from app.services.rag.config import get_supported_formats
 
 router = APIRouter()
 

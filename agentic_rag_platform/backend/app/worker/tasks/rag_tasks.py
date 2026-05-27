@@ -1,4 +1,3 @@
-
 """RAG ingestion & sync tasks — processes documents asynchronously."""
 
 import asyncio
@@ -7,17 +6,27 @@ import logging
 import tempfile
 from pathlib import Path
 from typing import Any
+
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=2, soft_time_limit=300, time_limit=360)  # type: ignore
-def ingest_document_task(self: Any, rag_document_id: str, collection_name: str, filepath: str, source_path: str, replace: bool = False) -> dict[str, Any]:
+def ingest_document_task(
+    self: Any,
+    rag_document_id: str,
+    collection_name: str,
+    filepath: str,
+    source_path: str,
+    replace: bool = False,
+) -> dict[str, Any]:
     """Process a document: parse, chunk, embed, store in vector DB."""
     logger.info(f"Starting ingestion: {source_path} -> {collection_name}")
     try:
-        return asyncio.run(_run_ingestion(rag_document_id, collection_name, filepath, source_path, replace))
+        return asyncio.run(
+            _run_ingestion(rag_document_id, collection_name, filepath, source_path, replace)
+        )
     except Exception as exc:
         logger.error(f"Ingestion failed: {exc}")
         asyncio.run(_update_status(rag_document_id, "error", error_message=str(exc)))
@@ -25,7 +34,9 @@ def ingest_document_task(self: Any, rag_document_id: str, collection_name: str, 
 
 
 @shared_task(bind=True, max_retries=1, soft_time_limit=600, time_limit=720)  # type: ignore
-def sync_collection_task(self: Any, sync_log_id: str, source: str, collection_name: str, mode: str, path: str) -> dict[str, Any]:
+def sync_collection_task(
+    self: Any, sync_log_id: str, source: str, collection_name: str, mode: str, path: str
+) -> dict[str, Any]:
     """Sync a collection from a local directory."""
     logger.info(f"Starting sync: {source} -> {collection_name} (mode={mode})")
     try:
@@ -37,7 +48,9 @@ def sync_collection_task(self: Any, sync_log_id: str, source: str, collection_na
 
 
 @shared_task(bind=True, max_retries=2, soft_time_limit=600, time_limit=720)  # type: ignore
-def sync_single_source_task(self: Any, source_id: str, sync_log_id: str | None = None) -> dict[str, Any]:
+def sync_single_source_task(
+    self: Any, source_id: str, sync_log_id: str | None = None
+) -> dict[str, Any]:
     """Sync a single connector source. If sync_log_id provided, use existing log."""
     logger.info(f"Starting source sync: {source_id}")
     try:
@@ -50,6 +63,7 @@ def sync_single_source_task(self: Any, source_id: str, sync_log_id: str | None =
 @shared_task  # type: ignore
 def check_scheduled_syncs() -> None:
     """Periodic task: find sources due for sync and dispatch individual tasks."""
+
     async def _check() -> None:
         from app.db.session import get_worker_db_context
         from app.repositories import sync_source as sync_source_repo
@@ -63,16 +77,16 @@ def check_scheduled_syncs() -> None:
     asyncio.run(_check())
 
 
-
-
-async def _run_ingestion(rag_document_id: str, collection_name: str, filepath: str, source_path: str, replace: bool) -> dict[str, Any]:
+async def _run_ingestion(
+    rag_document_id: str, collection_name: str, filepath: str, source_path: str, replace: bool
+) -> dict[str, Any]:
     from app.core.config import settings
     from app.db.session import get_worker_db_context
-    from app.services.rag_document import RAGDocumentService
     from app.services.rag.documents import DocumentProcessor
     from app.services.rag.embeddings import EmbeddingService
     from app.services.rag.ingestion import IngestionService
     from app.services.rag.vectorstore import PgVectorStore as VectorStore
+    from app.services.rag_document import RAGDocumentService
 
     rag_settings = settings.rag
     embed_service = EmbeddingService(settings=rag_settings)
@@ -82,9 +96,16 @@ async def _run_ingestion(rag_document_id: str, collection_name: str, filepath: s
 
     file_path = Path(filepath)
     try:
-        result = await ingestion_service.ingest_file(filepath=file_path, collection_name=collection_name, replace=replace, source_path=source_path)
+        result = await ingestion_service.ingest_file(
+            filepath=file_path,
+            collection_name=collection_name,
+            replace=replace,
+            source_path=source_path,
+        )
         async with get_worker_db_context() as db:
-            await RAGDocumentService(db).complete_ingestion(rag_document_id, vector_document_id=result.document_id)
+            await RAGDocumentService(db).complete_ingestion(
+                rag_document_id, vector_document_id=result.document_id
+            )
         await _notify_ws(rag_document_id, "done", source_path)
         logger.info(f"Ingestion complete: {source_path}")
         return {"status": "done", "document_id": result.document_id, "filename": source_path}
@@ -93,17 +114,20 @@ async def _run_ingestion(rag_document_id: str, collection_name: str, filepath: s
         raise
 
 
-async def _run_sync(sync_log_id: str, source: str, collection_name: str, mode: str, path: str) -> dict[str, Any]:
+async def _run_sync(
+    sync_log_id: str, source: str, collection_name: str, mode: str, path: str
+) -> dict[str, Any]:
     import hashlib
+
     from app.core.config import settings
     from app.db.session import get_worker_db_context
-    from app.services.rag_document import RAGDocumentService
-    from app.services.rag_sync import RAGSyncService
+    from app.services.rag.config import DocumentExtensions
     from app.services.rag.documents import DocumentProcessor
     from app.services.rag.embeddings import EmbeddingService
     from app.services.rag.ingestion import IngestionService
-    from app.services.rag.config import DocumentExtensions
     from app.services.rag.vectorstore import PgVectorStore as VectorStore
+    from app.services.rag_document import RAGDocumentService
+    from app.services.rag_sync import RAGSyncService
 
     rag_settings = settings.rag
     embed_service = EmbeddingService(settings=rag_settings)
@@ -131,7 +155,13 @@ async def _run_sync(sync_log_id: str, source: str, collection_name: str, mode: s
             sync_log_check = await RAGSyncService(db).get_sync_log(sync_log_id)
             if sync_log_check.status == "cancelled":
                 logger.info(f"Sync {sync_log_id} cancelled by user")
-                return {"status": "cancelled", "ingested": ingested, "updated": updated, "skipped": skipped, "failed": failed}
+                return {
+                    "status": "cancelled",
+                    "ingested": ingested,
+                    "updated": updated,
+                    "skipped": skipped,
+                    "failed": failed,
+                }
 
         source_path = str(filepath.resolve())
         if mode in ("new_only", "update_only"):
@@ -141,7 +171,9 @@ async def _run_sync(sync_log_id: str, source: str, collection_name: str, mode: s
                 if existing_id:
                     # File exists — check if content changed via hash
                     file_hash = hashlib.sha256(filepath.read_bytes()).hexdigest()
-                    existing_hash = await ingestion_service.get_existing_hash(collection_name, source_path)
+                    existing_hash = await ingestion_service.get_existing_hash(
+                        collection_name, source_path
+                    )
                     if existing_hash and file_hash == existing_hash:
                         skipped += 1
                         continue
@@ -152,12 +184,16 @@ async def _run_sync(sync_log_id: str, source: str, collection_name: str, mode: s
                     skipped += 1
                     continue
                 file_hash = hashlib.sha256(filepath.read_bytes()).hexdigest()
-                existing_hash = await ingestion_service.get_existing_hash(collection_name, source_path)
+                existing_hash = await ingestion_service.get_existing_hash(
+                    collection_name, source_path
+                )
                 if existing_hash and file_hash == existing_hash:
                     skipped += 1
                     continue
         try:
-            result = await ingestion_service.ingest_file(filepath=filepath, collection_name=collection_name, replace=True)
+            result = await ingestion_service.ingest_file(
+                filepath=filepath, collection_name=collection_name, replace=True
+            )
             if result.status.value == "done":
                 if result.message and "replaced" in result.message:
                     updated += 1
@@ -190,19 +226,28 @@ async def _run_sync(sync_log_id: str, source: str, collection_name: str, mode: s
             failed=failed,
         )
 
-    return {"status": "done", "ingested": ingested, "updated": updated, "skipped": skipped, "failed": failed}
+    return {
+        "status": "done",
+        "ingested": ingested,
+        "updated": updated,
+        "skipped": skipped,
+        "failed": failed,
+    }
 
 
-
-
-async def _update_status(rag_document_id: str, status: str, error_message: str | None = None) -> None:
+async def _update_status(
+    rag_document_id: str, status: str, error_message: str | None = None
+) -> None:
     from app.db.session import get_worker_db_context
     from app.services.rag_document import RAGDocumentService
+
     try:
         async with get_worker_db_context() as db:
             doc_svc = RAGDocumentService(db)
             if status == "error":
-                await doc_svc.fail_ingestion(rag_document_id, error_message=error_message or "Unknown error")
+                await doc_svc.fail_ingestion(
+                    rag_document_id, error_message=error_message or "Unknown error"
+                )
             elif status == "done":
                 # vector_document_id required for complete_ingestion; callers
                 # set status="done" directly in _run_ingestion with the ID.
@@ -214,12 +259,24 @@ async def _update_status(rag_document_id: str, status: str, error_message: str |
 async def _notify_ws(rag_document_id: str, status: str, filename: str) -> None:
     try:
         import json
+
         import redis.asyncio as aioredis
+
         from app.core.config import settings
-        r = aioredis.from_url(f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}")  # type: ignore[no-untyped-call]
-        await r.publish("rag_status", json.dumps({
-            "document_id": rag_document_id, "status": status, "filename": filename,
-        }))
+
+        r = aioredis.from_url(
+            f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+        )  # type: ignore[no-untyped-call]
+        await r.publish(
+            "rag_status",
+            json.dumps(
+                {
+                    "document_id": rag_document_id,
+                    "status": status,
+                    "filename": filename,
+                }
+            ),
+        )
         await r.aclose()
     except Exception as e:
         logger.warning(f"Failed to send WS notification: {e}")
@@ -228,9 +285,12 @@ async def _notify_ws(rag_document_id: str, status: str, filename: str) -> None:
 async def _update_sync_log(sync_log_id: str, status: str, error_message: str | None = None) -> None:
     from app.db.session import get_worker_db_context
     from app.services.rag_sync import RAGSyncService
+
     try:
         async with get_worker_db_context() as db:
-            await RAGSyncService(db).complete_sync(sync_log_id, status=status, error_message=error_message)
+            await RAGSyncService(db).complete_sync(
+                sync_log_id, status=status, error_message=error_message
+            )
     except Exception as e:
         logger.warning(f"Failed to update SyncLog: {e}")
 
@@ -243,13 +303,13 @@ async def _run_source_sync(source_id: str, sync_log_id: str | None = None) -> di
     """
     from app.core.config import settings
     from app.db.session import get_worker_db_context
-    from app.services.sync_source import SyncSourceService
-    from app.services.rag_sync import RAGSyncService
     from app.services.rag.connectors import CONNECTOR_REGISTRY
     from app.services.rag.documents import DocumentProcessor
     from app.services.rag.embeddings import EmbeddingService
     from app.services.rag.ingestion import IngestionService
     from app.services.rag.vectorstore import PgVectorStore as VectorStore
+    from app.services.rag_sync import RAGSyncService
+    from app.services.sync_source import SyncSourceService
 
     async with get_worker_db_context() as db:
         source_svc = SyncSourceService(db)

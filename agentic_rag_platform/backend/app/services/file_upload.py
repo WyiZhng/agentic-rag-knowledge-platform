@@ -1,4 +1,3 @@
-
 """File upload service (PostgreSQL async).
 
 Contains business logic for file validation, content parsing, and chat file
@@ -108,6 +107,7 @@ class FileUploadService:
         """Extract text from DOCX."""
         try:
             import io
+
             from docx import Document as DOCXDocument
 
             doc: Any = DOCXDocument(io.BytesIO(data))

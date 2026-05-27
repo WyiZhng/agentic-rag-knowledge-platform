@@ -1,4 +1,3 @@
-
 """Sync log repository (PostgreSQL async).
 
 Contains database operations for SyncLog entities.

@@ -1,4 +1,3 @@
-
 """create core tables (conversations, messages, chat_files, sessions, rag, channels)
 
 Revision ID: 0004_5_core_tables
@@ -11,14 +10,17 @@ groups so the schema only contains what was selected at generation time.
 """
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+
+from alembic import op
 
 revision = "0004_5_core_tables"
 down_revision = "0004_audit_log"
 branch_labels = None
 depends_on = None
+
+
 def _id_col() -> sa.Column:
     return sa.Column(
         "id",
@@ -48,7 +50,9 @@ def upgrade() -> None:
         _user_fk(nullable=True),
         sa.Column("title", sa.String(255), nullable=True),
         sa.Column("is_archived", sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.create_index("ix_conversations_user_id", "conversations", ["user_id"])
@@ -56,12 +60,19 @@ def upgrade() -> None:
     op.create_table(
         "messages",
         _id_col(),
-        sa.Column("conversation_id", _UUID, sa.ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "conversation_id",
+            _UUID,
+            sa.ForeignKey("conversations.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("role", sa.String(20), nullable=False),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("model_name", sa.String(100), nullable=True),
         sa.Column("tokens_used", sa.Integer(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.create_index("ix_messages_conversation_id", "messages", ["conversation_id"])
@@ -69,7 +80,9 @@ def upgrade() -> None:
     op.create_table(
         "tool_calls",
         _id_col(),
-        sa.Column("message_id", _UUID, sa.ForeignKey("messages.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "message_id", _UUID, sa.ForeignKey("messages.id", ondelete="CASCADE"), nullable=False
+        ),
         sa.Column("tool_call_id", sa.String(100), nullable=False),
         sa.Column("tool_name", sa.String(100), nullable=False),
         sa.Column("args", _JSONB, nullable=False),
@@ -85,14 +98,18 @@ def upgrade() -> None:
         "chat_files",
         _id_col(),
         _user_fk(nullable=False),
-        sa.Column("message_id", _UUID, sa.ForeignKey("messages.id", ondelete="CASCADE"), nullable=True),
+        sa.Column(
+            "message_id", _UUID, sa.ForeignKey("messages.id", ondelete="CASCADE"), nullable=True
+        ),
         sa.Column("filename", sa.String(255), nullable=False),
         sa.Column("mime_type", sa.String(100), nullable=False),
         sa.Column("size", sa.Integer(), nullable=False),
         sa.Column("storage_path", sa.String(500), nullable=False),
         sa.Column("file_type", sa.String(20), nullable=False),
         sa.Column("parsed_content", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.create_index("ix_chat_files_user_id", "chat_files", ["user_id"])
@@ -100,25 +117,42 @@ def upgrade() -> None:
     op.create_table(
         "conversation_shares",
         _id_col(),
-        sa.Column("conversation_id", _UUID, sa.ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("shared_by", _UUID, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("shared_with", _UUID, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=True),
+        sa.Column(
+            "conversation_id",
+            _UUID,
+            sa.ForeignKey("conversations.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "shared_by", _UUID, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        ),
+        sa.Column(
+            "shared_with", _UUID, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+        ),
         sa.Column("share_token", sa.String(64), nullable=True, unique=True),
         sa.Column("permission", sa.String(10), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.UniqueConstraint("conversation_id", "shared_with", name="uq_share_conv_user"),
     )
-    op.create_index("ix_conversation_shares_conversation_id", "conversation_shares", ["conversation_id"])
+    op.create_index(
+        "ix_conversation_shares_conversation_id", "conversation_shares", ["conversation_id"]
+    )
     op.create_index("ix_conversation_shares_shared_with", "conversation_shares", ["shared_with"])
 
     op.create_table(
         "message_ratings",
         _id_col(),
-        sa.Column("message_id", _UUID, sa.ForeignKey("messages.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "message_id", _UUID, sa.ForeignKey("messages.id", ondelete="CASCADE"), nullable=False
+        ),
         _user_fk(nullable=False),
         sa.Column("rating", sa.Integer(), nullable=False),
         sa.Column("comment", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
         sa.CheckConstraint("rating IN (1, -1)", name="message_ratings_ck_rating_value_check"),
         sa.UniqueConstraint("message_id", "user_id", name="uq_message_user_rating"),
@@ -138,9 +172,13 @@ def upgrade() -> None:
         sa.Column("error_message", sa.Text(), nullable=True),
         sa.Column("vector_document_id", sa.String(255), nullable=True),
         sa.Column("chunk_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("started_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "started_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.create_index("ix_rag_documents_collection_name", "rag_documents", ["collection_name"])
@@ -158,7 +196,9 @@ def upgrade() -> None:
         sa.Column("last_sync_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("last_sync_status", sa.String(20), nullable=True),
         sa.Column("last_error", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.create_index("ix_sync_sources_collection_name", "sync_sources", ["collection_name"])
@@ -168,7 +208,12 @@ def upgrade() -> None:
         _id_col(),
         sa.Column("source", sa.String(20), nullable=False),
         sa.Column("collection_name", sa.String(255), nullable=False),
-        sa.Column("sync_source_id", _UUID, sa.ForeignKey("sync_sources.id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "sync_source_id",
+            _UUID,
+            sa.ForeignKey("sync_sources.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
         sa.Column("status", sa.String(20), nullable=False),
         sa.Column("mode", sa.String(20), nullable=False),
         sa.Column("total_files", sa.Integer(), nullable=False, server_default="0"),
@@ -177,9 +222,13 @@ def upgrade() -> None:
         sa.Column("skipped", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("failed", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("error_message", sa.Text(), nullable=True),
-        sa.Column("started_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "started_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.create_index("ix_sync_logs_collection_name", "sync_logs", ["collection_name"])

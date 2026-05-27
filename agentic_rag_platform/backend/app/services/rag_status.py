@@ -1,4 +1,3 @@
-
 """RAG status streaming — Redis pub/sub fan-out for SSE clients."""
 
 import asyncio

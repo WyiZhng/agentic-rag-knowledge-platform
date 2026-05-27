@@ -1,29 +1,27 @@
-
 """Tests for admin panel with automatic model discovery."""
 
-from typing import ClassVar
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from sqlalchemy import Boolean, Integer, String, DateTime, Text
+from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.admin import (
-    SENSITIVE_COLUMN_PATTERNS,
     AUTO_GENERATED_COLUMNS,
     MODEL_ICONS,
+    SENSITIVE_COLUMN_PATTERNS,
+    AdminAuth,
+    create_model_admin,
     discover_models,
+    get_form_excluded_columns,
     get_model_columns,
     get_searchable_columns,
     get_sortable_columns,
-    get_form_excluded_columns,
-    pluralize,
-    create_model_admin,
-    register_models_auto,
     get_sync_engine,
+    pluralize,
+    register_models_auto,
     setup_admin,
 )
-from app.admin import AdminAuth
 
 
 class MockBase(DeclarativeBase):
@@ -343,9 +341,7 @@ class TestCreateModelAdmin:
 
     def test_custom_column_list(self):
         """Test that custom column_list can be provided."""
-        admin_class = create_model_admin(
-            MockItem, column_list=[MockItem.id, MockItem.title]
-        )
+        admin_class = create_model_admin(MockItem, column_list=[MockItem.id, MockItem.title])
 
         assert len(admin_class.column_list) == 2
 
@@ -411,9 +407,7 @@ class TestRegisterModelsAuto:
         """Test that excluded models are not registered."""
         mock_admin = MagicMock()
 
-        registered = register_models_auto(
-            mock_admin, MockBase, exclude_models=[MockSession]
-        )
+        registered = register_models_auto(mock_admin, MockBase, exclude_models=[MockSession])
 
         registered_names = [r.__name__ for r in registered]
         assert "MockSessionAdmin" not in registered_names
@@ -428,9 +422,7 @@ class TestRegisterModelsAuto:
             }
         }
 
-        registered = register_models_auto(
-            mock_admin, MockBase, custom_configs=custom_configs
-        )
+        registered = register_models_auto(mock_admin, MockBase, custom_configs=custom_configs)
 
         # Find the MockItem admin class
         item_admin = next(r for r in registered if r.model == MockItem)
@@ -472,9 +464,7 @@ class TestGetSyncEngine:
 
         engine = get_sync_engine()
 
-        mock_create_engine.assert_called_once_with(
-            "postgresql://test", echo=False
-        )
+        mock_create_engine.assert_called_once_with("postgresql://test", echo=False)
         assert engine == mock_engine
 
         # Reset for other tests
@@ -514,9 +504,7 @@ class TestSetupAdmin:
     @patch("app.admin.register_models_auto")
     @patch("app.admin.get_sync_engine")
     @patch("app.admin.Admin")
-    def test_creates_admin_instance(
-        self, mock_admin_class, mock_get_engine, mock_register
-    ):
+    def test_creates_admin_instance(self, mock_admin_class, mock_get_engine, mock_register):
         """Test that Admin instance is created."""
         mock_engine = MagicMock()
         mock_get_engine.return_value = mock_engine
@@ -532,9 +520,7 @@ class TestSetupAdmin:
     @patch("app.admin.register_models_auto")
     @patch("app.admin.get_sync_engine")
     @patch("app.admin.Admin")
-    def test_calls_register_models_auto(
-        self, mock_admin_class, mock_get_engine, mock_register
-    ):
+    def test_calls_register_models_auto(self, mock_admin_class, mock_get_engine, mock_register):
         """Test that register_models_auto is called."""
         mock_engine = MagicMock()
         mock_get_engine.return_value = mock_engine
@@ -549,9 +535,7 @@ class TestSetupAdmin:
     @patch("app.admin.register_models_auto")
     @patch("app.admin.get_sync_engine")
     @patch("app.admin.Admin")
-    def test_uses_correct_engine(
-        self, mock_admin_class, mock_get_engine, mock_register
-    ):
+    def test_uses_correct_engine(self, mock_admin_class, mock_get_engine, mock_register):
         """Test that the sync engine is used."""
         mock_engine = MagicMock()
         mock_get_engine.return_value = mock_engine
@@ -585,9 +569,7 @@ class TestAdminAuth:
         return request
 
     @pytest.mark.anyio
-    async def test_login_returns_false_for_empty_credentials(
-        self, auth_backend, mock_request
-    ):
+    async def test_login_returns_false_for_empty_credentials(self, auth_backend, mock_request):
         """Test that login fails with empty credentials."""
         mock_request.form = AsyncMock(return_value={"username": "", "password": ""})
 
@@ -596,9 +578,7 @@ class TestAdminAuth:
         assert result is False
 
     @pytest.mark.anyio
-    async def test_login_returns_false_for_missing_email(
-        self, auth_backend, mock_request
-    ):
+    async def test_login_returns_false_for_missing_email(self, auth_backend, mock_request):
         """Test that login fails with missing email."""
         mock_request.form = AsyncMock(return_value={"username": None, "password": "pass"})
 
@@ -607,9 +587,7 @@ class TestAdminAuth:
         assert result is False
 
     @pytest.mark.anyio
-    async def test_login_returns_false_for_missing_password(
-        self, auth_backend, mock_request
-    ):
+    async def test_login_returns_false_for_missing_password(self, auth_backend, mock_request):
         """Test that login fails with missing password."""
         mock_request.form = AsyncMock(return_value={"username": "test@test.com", "password": None})
 
@@ -634,9 +612,7 @@ class TestAdminAuth:
         mock_get_engine.return_value = mock_engine
 
         with patch("sqlalchemy.orm.Session") as mock_session_class:
-            mock_session_class.return_value.__enter__ = MagicMock(
-                return_value=mock_session
-            )
+            mock_session_class.return_value.__enter__ = MagicMock(return_value=mock_session)
             mock_session_class.return_value.__exit__ = MagicMock(return_value=False)
 
             result = await auth_backend.login(mock_request)
@@ -665,9 +641,7 @@ class TestAdminAuth:
         mock_get_engine.return_value = mock_engine
 
         with patch("sqlalchemy.orm.Session") as mock_session_class:
-            mock_session_class.return_value.__enter__ = MagicMock(
-                return_value=mock_session
-            )
+            mock_session_class.return_value.__enter__ = MagicMock(return_value=mock_session)
             mock_session_class.return_value.__exit__ = MagicMock(return_value=False)
 
             result = await auth_backend.login(mock_request)
@@ -696,9 +670,7 @@ class TestAdminAuth:
         mock_get_engine.return_value = mock_engine
 
         with patch("sqlalchemy.orm.Session") as mock_session_class:
-            mock_session_class.return_value.__enter__ = MagicMock(
-                return_value=mock_session
-            )
+            mock_session_class.return_value.__enter__ = MagicMock(return_value=mock_session)
             mock_session_class.return_value.__exit__ = MagicMock(return_value=False)
 
             result = await auth_backend.login(mock_request)
@@ -729,9 +701,7 @@ class TestAdminAuth:
         mock_get_engine.return_value = mock_engine
 
         with patch("sqlalchemy.orm.Session") as mock_session_class:
-            mock_session_class.return_value.__enter__ = MagicMock(
-                return_value=mock_session
-            )
+            mock_session_class.return_value.__enter__ = MagicMock(return_value=mock_session)
             mock_session_class.return_value.__exit__ = MagicMock(return_value=False)
 
             result = await auth_backend.login(mock_request)
@@ -752,9 +722,7 @@ class TestAdminAuth:
         assert len(mock_request.session) == 0
 
     @pytest.mark.anyio
-    async def test_authenticate_returns_false_without_session(
-        self, auth_backend, mock_request
-    ):
+    async def test_authenticate_returns_false_without_session(self, auth_backend, mock_request):
         """Test that authenticate fails without session."""
         mock_request.session = {}
 
@@ -776,9 +744,7 @@ class TestAdminAuth:
         mock_get_engine.return_value = mock_engine
 
         with patch("sqlalchemy.orm.Session") as mock_session_class:
-            mock_session_class.return_value.__enter__ = MagicMock(
-                return_value=mock_session
-            )
+            mock_session_class.return_value.__enter__ = MagicMock(return_value=mock_session)
             mock_session_class.return_value.__exit__ = MagicMock(return_value=False)
 
             result = await auth_backend.authenticate(mock_request)
@@ -803,9 +769,7 @@ class TestAdminAuth:
         mock_get_engine.return_value = mock_engine
 
         with patch("sqlalchemy.orm.Session") as mock_session_class:
-            mock_session_class.return_value.__enter__ = MagicMock(
-                return_value=mock_session
-            )
+            mock_session_class.return_value.__enter__ = MagicMock(return_value=mock_session)
             mock_session_class.return_value.__exit__ = MagicMock(return_value=False)
 
             result = await auth_backend.authenticate(mock_request)
@@ -830,9 +794,7 @@ class TestAdminAuth:
         mock_get_engine.return_value = mock_engine
 
         with patch("sqlalchemy.orm.Session") as mock_session_class:
-            mock_session_class.return_value.__enter__ = MagicMock(
-                return_value=mock_session
-            )
+            mock_session_class.return_value.__enter__ = MagicMock(return_value=mock_session)
             mock_session_class.return_value.__exit__ = MagicMock(return_value=False)
 
             result = await auth_backend.authenticate(mock_request)
@@ -857,9 +819,7 @@ class TestAdminAuth:
         mock_get_engine.return_value = mock_engine
 
         with patch("sqlalchemy.orm.Session") as mock_session_class:
-            mock_session_class.return_value.__enter__ = MagicMock(
-                return_value=mock_session
-            )
+            mock_session_class.return_value.__enter__ = MagicMock(return_value=mock_session)
             mock_session_class.return_value.__exit__ = MagicMock(return_value=False)
 
             result = await auth_backend.authenticate(mock_request)

@@ -1,4 +1,3 @@
-
 """Caching configuration using fastapi-cache2."""
 
 from fastapi_cache import FastAPICache

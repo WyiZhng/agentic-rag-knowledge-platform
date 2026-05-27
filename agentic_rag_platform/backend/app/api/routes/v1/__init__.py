@@ -42,7 +42,9 @@ v1_router.include_router(rag.router, prefix="/rag", tags=["rag"])
 v1_router.include_router(files.router, tags=["files"])
 
 # Admin: conversation browser
-v1_router.include_router(admin_conversations.router, prefix="/admin/conversations", tags=["admin-conversations"])
+v1_router.include_router(
+    admin_conversations.router, prefix="/admin/conversations", tags=["admin-conversations"]
+)
 
 # Admin: user management + impersonation
 v1_router.include_router(admin_users.router, prefix="/admin/users", tags=["admin:users"])

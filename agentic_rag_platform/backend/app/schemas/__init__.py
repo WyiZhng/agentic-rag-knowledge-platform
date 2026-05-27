@@ -23,4 +23,23 @@ from app.schemas.sync_source import (
     SyncSourceUpdate,
 )
 
-__all__ = ['UserCreate', 'UserRead', 'UserUpdate', 'Token', 'TokenPayload', 'ConversationCreate', 'ConversationRead', 'ConversationUpdate', 'MessageCreate', 'MessageRead', 'ToolCallRead', 'SyncSourceCreate', 'SyncSourceRead', 'SyncSourceUpdate', 'SyncSourceList', 'ConnectorInfo', 'ConnectorList', 'ConnectorConfigField']
+__all__ = [
+    "UserCreate",
+    "UserRead",
+    "UserUpdate",
+    "Token",
+    "TokenPayload",
+    "ConversationCreate",
+    "ConversationRead",
+    "ConversationUpdate",
+    "MessageCreate",
+    "MessageRead",
+    "ToolCallRead",
+    "SyncSourceCreate",
+    "SyncSourceRead",
+    "SyncSourceUpdate",
+    "SyncSourceList",
+    "ConnectorInfo",
+    "ConnectorList",
+    "ConnectorConfigField",
+]

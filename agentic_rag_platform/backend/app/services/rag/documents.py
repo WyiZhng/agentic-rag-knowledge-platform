@@ -1,14 +1,13 @@
-
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 import pymupdf
 from docx import Document as DOCXDocument
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from app.services.rag.config import RAGSettings, DocumentExtensions
+from app.services.rag.config import DocumentExtensions, RAGSettings
 from app.services.rag.models import Document, DocumentMetadata, DocumentPage, DocumentPageChunk
 
 logger = logging.getLogger(__name__)
@@ -48,6 +47,7 @@ class BaseDocumentParser(ABC):
             DocumentMetadata object containing file information.
         """
         import hashlib
+
         content_hash = hashlib.sha256(filepath.read_bytes()).hexdigest()
         return DocumentMetadata(
             filename=filepath.name,
@@ -81,16 +81,10 @@ class TextDocumentParser(BaseDocumentParser):
         Returns:
             Document object with the file content.
         """
-        with open(filepath, "r", encoding="utf-8") as f:
-            page = DocumentPage(
-                page_num=1,
-                content=f.read()
-            )
+        with open(filepath, encoding="utf-8") as f:
+            page = DocumentPage(page_num=1, content=f.read())
 
-        return Document(
-            pages=[page],
-            metadata=self.get_document_metadata(filepath)
-        )
+        return Document(pages=[page], metadata=self.get_document_metadata(filepath))
 
     async def parse(self, filepath: Path) -> Document:
         """Parse a text file (TXT or MD).
@@ -112,6 +106,7 @@ class TextDocumentParser(BaseDocumentParser):
         else:
             raise ValueError(f"Unsupported file extension. Allowed extensions: {self.allowed}")
 
+
 class DocxDocumentParser(BaseDocumentParser):
     """Parser for DOCX documents using python-docx.
 
@@ -129,14 +124,8 @@ class DocxDocumentParser(BaseDocumentParser):
             Document object with the file content.
         """
         file: Any = DOCXDocument(str(filepath))
-        page = DocumentPage(
-            page_num=1,
-            content="\n".join([p.text for p in file.paragraphs])
-        )
-        return Document(
-            pages=[page],
-            metadata=self.get_document_metadata(filepath)
-        )
+        page = DocumentPage(page_num=1, content="\n".join([p.text for p in file.paragraphs]))
+        return Document(pages=[page], metadata=self.get_document_metadata(filepath))
 
     async def parse(self, filepath: Path) -> Document:
         """Parse a DOCX file.
@@ -226,13 +215,14 @@ class PyMuPDFParser(BaseDocumentParser):
             return ""
         try:
             import asyncio
+
             pix = page.get_pixmap(dpi=200)
             image_bytes = pix.tobytes("png")
             loop = asyncio.new_event_loop()
             try:
-                return str(loop.run_until_complete(
-                    image_describer.describe(image_bytes, "image/png")
-                ))
+                return str(
+                    loop.run_until_complete(image_describer.describe(image_bytes, "image/png"))
+                )
             finally:
                 loop.close()
         except Exception as e:
@@ -267,10 +257,12 @@ class PyMuPDFParser(BaseDocumentParser):
                     text = ocr_text
                     logger.info(f"OCR fallback used for page {page.number + 1}")
 
-            pages.append(DocumentPage(
-                page_num=page.number + 1,
-                content=text,
-            ))
+            pages.append(
+                DocumentPage(
+                    page_num=page.number + 1,
+                    content=text,
+                )
+            )
 
         doc.close()
 
@@ -329,7 +321,6 @@ class DocumentProcessor:
         """Create text splitter based on chunking strategy."""
         from langchain_text_splitters import (
             MarkdownHeaderTextSplitter,
-            RecursiveCharacterTextSplitter,
         )
 
         strategy = settings.chunking_strategy
@@ -338,7 +329,9 @@ class DocumentProcessor:
             # Split by markdown headers, then by size
             return MarkdownHeaderTextSplitter(
                 headers_to_split_on=[
-                    ("#", "h1"), ("##", "h2"), ("###", "h3"),
+                    ("#", "h1"),
+                    ("##", "h2"),
+                    ("###", "h3"),
                 ],
                 strip_headers=False,
             )
@@ -394,13 +387,14 @@ class DocumentProcessor:
             else:
                 chunks = self.splitter.split_text(page.content)
             for chunk_num, chunk in enumerate(chunks):
-                chunked_pages.append(DocumentPageChunk(
-                    chunk_content=chunk,
-                    chunk_num=chunk_num,
-                    parent_doc_id=document.id,
-                    **page.model_dump(
-                        exclude={"parent_doc_id"}
-                    )))
+                chunked_pages.append(
+                    DocumentPageChunk(
+                        chunk_content=chunk,
+                        chunk_num=chunk_num,
+                        parent_doc_id=document.id,
+                        **page.model_dump(exclude={"parent_doc_id"}),
+                    )
+                )
 
         # Add chunked pages to original document
         document.chunked_pages = chunked_pages

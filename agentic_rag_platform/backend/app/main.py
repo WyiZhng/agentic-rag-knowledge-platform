@@ -12,18 +12,18 @@ from fastapi_pagination import add_pagination
 
 from app.api.exception_handlers import register_exception_handlers
 from app.api.router import api_router
+from app.clients.redis import RedisClient
 from app.core.config import settings
 from app.core.logfire_setup import instrument_app, setup_logfire
 from app.core.logging import setup_logging
 from app.core.middleware import RequestIDMiddleware
-from app.clients.redis import RedisClient
 from app.services.rag.embeddings import EmbeddingService
-from app.services.rag.vectorstore import PgVectorStore
-from app.services.rag.vectorstore import BaseVectorStore
+from app.services.rag.vectorstore import BaseVectorStore, PgVectorStore
 
 
 class LifespanState(TypedDict, total=False):
     """Lifespan state - resources available via request.state."""
+
     redis: RedisClient
     embedding_service: EmbeddingService
     vector_store: BaseVectorStore
@@ -40,13 +40,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[LifespanState, None]:
     state: LifespanState = {}
     setup_logfire()
     from app.core.logfire_setup import instrument_asyncpg
+
     instrument_asyncpg()
     redis_client = RedisClient()
     await redis_client.connect()
     state["redis"] = redis_client
     from app.core.cache import setup_cache
+
     setup_cache(redis_client)
     from app.core.config import settings
+
     try:
         embedder = EmbeddingService(settings=settings.rag)
         embedder.warmup()
@@ -56,6 +59,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[LifespanState, None]:
     # Initialize and warmup reranker (downloads model or validates API key)
     try:
         from app.services.rag.reranker import RerankService
+
         rerank_service = RerankService(settings=settings.rag)
         rerank_service.warmup()
         state["rerank_service"] = rerank_service
@@ -73,6 +77,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[LifespanState, None]:
     if "redis" in state:
         await state["redis"].close()
     from app.db.session import close_db
+
     await close_db()
     try:
         if "vector_store" in state:
@@ -177,6 +182,7 @@ A FastAPI project
 
     # CORS middleware
     from starlette.middleware.cors import CORSMiddleware
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
@@ -188,14 +194,17 @@ A FastAPI project
     # Rate limiting
     # Note: slowapi requires app.state.limiter - this is a library requirement,
     # not suitable for lifespan state pattern which is for request-scoped access
-    from app.core.rate_limit import limiter
     from slowapi import _rate_limit_exceeded_handler
     from slowapi.errors import RateLimitExceeded
+
+    from app.core.rate_limit import limiter
+
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     # Session middleware (for admin authentication and/or OAuth)
     from starlette.middleware.sessions import SessionMiddleware
+
     app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 
     # Admin panel (environment restricted)
@@ -203,6 +212,7 @@ A FastAPI project
 
     if settings.ENVIRONMENT in ADMIN_ALLOWED_ENVIRONMENTS:
         from app.admin import setup_admin
+
         setup_admin(app)
 
     # API Version Deprecation (uncomment when deprecating old versions)

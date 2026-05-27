@@ -1,4 +1,3 @@
-
 """Sync source service (PostgreSQL async).
 
 Contains business logic for managing RAG sync source configurations
@@ -14,7 +13,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import BadRequestError, NotFoundError
 from app.db.models.sync_log import SyncLog
 from app.db.models.sync_source import SyncSource
-from app.services.rag.connectors import CONNECTOR_REGISTRY
 from app.repositories import sync_log as sync_log_repo
 from app.repositories import sync_source as sync_source_repo
 from app.schemas.sync_source import (
@@ -26,6 +24,7 @@ from app.schemas.sync_source import (
     SyncSourceRead,
     SyncSourceUpdate,
 )
+from app.services.rag.connectors import CONNECTOR_REGISTRY
 
 
 class SyncSourceService:
@@ -40,7 +39,11 @@ class SyncSourceService:
             name=s.name,
             connector_type=s.connector_type,
             collection_name=s.collection_name,
-            config=s.config if isinstance(s.config, dict) else json.loads(s.config) if s.config else {},
+            config=s.config
+            if isinstance(s.config, dict)
+            else json.loads(s.config)
+            if s.config
+            else {},
             sync_mode=s.sync_mode,
             schedule_minutes=s.schedule_minutes,
             is_active=s.is_active,
@@ -106,9 +109,7 @@ class SyncSourceService:
         )
         return self._to_read(source)
 
-    async def update_source(
-        self, source_id: str, data: SyncSourceUpdate
-    ) -> SyncSourceRead:
+    async def update_source(self, source_id: str, data: SyncSourceUpdate) -> SyncSourceRead:
         """Update an existing sync source.
 
         Raises:
@@ -116,9 +117,7 @@ class SyncSourceService:
         """
         await self.get_source(source_id)  # verify exists
         updates = data.model_dump(exclude_unset=True)
-        source = await sync_source_repo.update(
-            self.db, UUID(source_id), **updates
-        )
+        source = await sync_source_repo.update(self.db, UUID(source_id), **updates)
         if source is None:
             raise NotFoundError(message="Sync source not found", details={"source_id": source_id})
         return self._to_read(source)
@@ -175,10 +174,12 @@ class SyncSourceService:
                 field_name: ConnectorConfigField(**field_spec)
                 for field_name, field_spec in connector_cls.CONFIG_SCHEMA.items()
             }
-            items.append(ConnectorInfo(
-                type=connector_cls.CONNECTOR_TYPE,
-                name=connector_cls.DISPLAY_NAME,
-                config_schema=schema_fields,
-                enabled=True,
-            ))
+            items.append(
+                ConnectorInfo(
+                    type=connector_cls.CONNECTOR_TYPE,
+                    name=connector_cls.DISPLAY_NAME,
+                    config_schema=schema_fields,
+                    enabled=True,
+                )
+            )
         return ConnectorList(items=items)

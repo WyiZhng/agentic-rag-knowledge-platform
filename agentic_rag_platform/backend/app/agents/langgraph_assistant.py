@@ -1,4 +1,3 @@
-
 """LangGraph ReAct Agent implementation.
 
 A simple ReAct (Reasoning + Acting) agent built with LangGraph.
@@ -11,15 +10,14 @@ from typing import Annotated, Any, Literal, TypedDict
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.managed import RemainingSteps
 from langgraph.prebuilt import ToolNode
-from langchain_openai import ChatOpenAI
 
-from app.agents.prompts import DEFAULT_SYSTEM_PROMPT
 from app.agents.prompts import get_system_prompt_with_rag
 from app.agents.tools import get_current_datetime
 from app.agents.tools.rag_tool import search_knowledge_base
@@ -58,6 +56,8 @@ def current_datetime() -> dict[str, str]:
     Use this tool when you need to know the current date or time.
     """
     return get_current_datetime()
+
+
 @tool
 async def search_documents(query: str, top_k: int = 5) -> str:
     """Search the knowledge base for relevant documents.
@@ -145,7 +145,13 @@ class LangGraphAssistant:
         This is the main reasoning node in the ReAct pattern.
         """
         if state.get("remaining_steps", 10) <= 2:
-            return {"messages": [AIMessage(content="I've reached my step limit and cannot continue reasoning. Here is what I found so far.")]}
+            return {
+                "messages": [
+                    AIMessage(
+                        content="I've reached my step limit and cannot continue reasoning. Here is what I found so far."
+                    )
+                ]
+            }
 
         # Prepend system message to the conversation
         messages = [SystemMessage(content=self.system_prompt), *state["messages"]]
@@ -258,7 +264,11 @@ class LangGraphAssistant:
         for message in result.get("messages", []):
             if isinstance(message, AIMessage):
                 if message.content:
-                    output = message.content if isinstance(message.content, str) else str(message.content)
+                    output = (
+                        message.content
+                        if isinstance(message.content, str)
+                        else str(message.content)
+                    )
                 if hasattr(message, "tool_calls") and message.tool_calls:
                     tool_events.extend(message.tool_calls)
 

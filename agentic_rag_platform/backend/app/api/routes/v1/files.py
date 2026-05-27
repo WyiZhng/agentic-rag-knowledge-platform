@@ -1,4 +1,3 @@
-
 """File upload and download endpoints for chat attachments."""
 
 import logging
@@ -71,7 +70,9 @@ async def download_file(
     try:
         chat_file = await file_upload_svc.get_user_file(file_id, current_user.id)
     except NotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found") from None
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        ) from None
 
     storage = get_file_storage()
     file_path = storage.get_full_path(chat_file.storage_path)
@@ -105,7 +106,9 @@ async def get_file_info(
     try:
         chat_file = await file_upload_svc.get_user_file(file_id, current_user.id)
     except NotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found") from None
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        ) from None
 
     return FileInfo(
         id=chat_file.id,

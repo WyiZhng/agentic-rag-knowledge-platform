@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import hashlib
@@ -6,12 +5,13 @@ import logging
 import time
 from abc import ABC, abstractmethod
 
-from app.services.rag.models import SearchResult
-from app.services.rag.vectorstore import BaseVectorStore
 from app.services.rag.config import RAGSettings
+from app.services.rag.models import SearchResult
 from app.services.rag.reranker import RerankService
+from app.services.rag.vectorstore import BaseVectorStore
 
 logger = logging.getLogger(__name__)
+
 
 class BaseRetrievalService(ABC):
     """Abstract base class for retrieval service implementations.
@@ -27,7 +27,7 @@ class BaseRetrievalService(ABC):
         collection_name: str,
         limit: int = 5,
         min_score: float = 0.0,
-        filter: str = ""
+        filter: str = "",
     ) -> list[SearchResult]:
         """Execute the retrieval pipeline to find relevant chunks.
 
@@ -45,11 +45,7 @@ class BaseRetrievalService(ABC):
 
     @abstractmethod
     async def retrieve_by_document(
-        self,
-        query: str,
-        collection_name: str,
-        document_id: str,
-        limit: int = 3
+        self, query: str, collection_name: str, document_id: str, limit: int = 3
     ) -> list[SearchResult]:
         """Specialized retrieval restricted to a single document.
 
@@ -66,6 +62,7 @@ class BaseRetrievalService(ABC):
             List of SearchResult objects from the specified document.
         """
         pass
+
 
 class RetrievalService(BaseRetrievalService):
     """High-level retrieval service with multi-stage pipeline.
@@ -105,12 +102,20 @@ class RetrievalService(BaseRetrievalService):
         result_map: dict[str, SearchResult] = {}
 
         for rank, r in enumerate(vector_results):
-            key = f"{r.parent_doc_id}:{r.metadata.get('chunk_num', '')}" if r.parent_doc_id else hashlib.md5(r.content.encode()).hexdigest()
+            key = (
+                f"{r.parent_doc_id}:{r.metadata.get('chunk_num', '')}"
+                if r.parent_doc_id
+                else hashlib.md5(r.content.encode()).hexdigest()
+            )
             scores[key] = scores.get(key, 0) + 1.0 / (k + rank + 1)
             result_map[key] = r
 
         for rank, r in enumerate(bm25_results):
-            key = f"{r.parent_doc_id}:{r.metadata.get('chunk_num', '')}" if r.parent_doc_id else hashlib.md5(r.content.encode()).hexdigest()
+            key = (
+                f"{r.parent_doc_id}:{r.metadata.get('chunk_num', '')}"
+                if r.parent_doc_id
+                else hashlib.md5(r.content.encode()).hexdigest()
+            )
             scores[key] = scores.get(key, 0) + 1.0 / (k + rank + 1)
             if key not in result_map:
                 result_map[key] = r
@@ -153,9 +158,7 @@ class RetrievalService(BaseRetrievalService):
         query_tokens = query.lower().split()
         bm25_scores = bm25.get_scores(query_tokens)
 
-        scored = sorted(
-            zip(all_results, bm25_scores), key=lambda x: x[1], reverse=True
-        )
+        scored = sorted(zip(all_results, bm25_scores), key=lambda x: x[1], reverse=True)
         return [
             SearchResult(
                 content=r.content,
@@ -208,7 +211,7 @@ class RetrievalService(BaseRetrievalService):
             collection_name=collection_name,
             query=query,
             filter=filter,
-            limit=limit * fetch_multiplier
+            limit=limit * fetch_multiplier,
         )
 
         search_time = time.time() - start_time
@@ -227,7 +230,7 @@ class RetrievalService(BaseRetrievalService):
         # Log initial results
         for i, r in enumerate(raw_results[:3]):
             logger.debug(
-                f"[RETRIEVAL] Initial result #{i+1}: score={r.score:.4f}, "
+                f"[RETRIEVAL] Initial result #{i + 1}: score={r.score:.4f}, "
                 f"content='{r.content[:50]}...'"
             )
 
@@ -251,16 +254,11 @@ class RetrievalService(BaseRetrievalService):
                 f"returned {len(results)} results"
             )
         elif use_reranker and not self._reranker_enabled:
-            logger.warning(
-                "[RETRIEVAL] Reranking requested but not configured - skipping"
-            )
+            logger.warning("[RETRIEVAL] Reranking requested but not configured - skipping")
 
         # Step 3: Post-processing: Filter by score
         # Cosine similarity is higher = better.
-        filtered_results = [
-            res for res in results
-            if res.score >= min_score
-        ]
+        filtered_results = [res for res in results if res.score >= min_score]
 
         # Step 4: Deduplicate — keep highest-scored result per unique chunk
         seen_keys: set[str] = set()
@@ -283,7 +281,7 @@ class RetrievalService(BaseRetrievalService):
         # Log final results
         for i, r in enumerate(deduped_results[:3]):
             logger.debug(
-                f"[RETRIEVAL] Final result #{i+1}: score={r.score:.4f}, "
+                f"[RETRIEVAL] Final result #{i + 1}: score={r.score:.4f}, "
                 f"content='{r.content[:50]}...'"
             )
 

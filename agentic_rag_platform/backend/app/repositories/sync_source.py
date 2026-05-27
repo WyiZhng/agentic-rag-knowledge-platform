@@ -1,14 +1,12 @@
-
 """Sync source repository (PostgreSQL async).
 
 Contains database operations for SyncSource entities.
 """
 
-import json
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import or_, func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.sync_source import SyncSource
@@ -38,7 +36,6 @@ async def get_due_for_sync(db: AsyncSession) -> list[SyncSource]:
     Returns active sources with a schedule where enough time has elapsed
     since the last sync (or that have never been synced).
     """
-    from datetime import timedelta
     now = datetime.now(UTC)
     # Fetch all active scheduled sources, filter in Python (avoids DB-specific interval syntax)
     query = select(SyncSource).where(
@@ -48,10 +45,12 @@ async def get_due_for_sync(db: AsyncSession) -> list[SyncSource]:
     result = await db.execute(query)
     sources = list(result.scalars().all())
     return [
-        s for s in sources
+        s
+        for s in sources
         if s.schedule_minutes is not None
-        and (s.last_sync_at is None
-        or s.last_sync_at + timedelta(minutes=s.schedule_minutes) <= now)
+        and (
+            s.last_sync_at is None or s.last_sync_at + timedelta(minutes=s.schedule_minutes) <= now
+        )
     ]
 
 

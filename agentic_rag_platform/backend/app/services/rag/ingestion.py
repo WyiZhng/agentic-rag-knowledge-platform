@@ -1,12 +1,11 @@
-
 from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
-from app.services.rag.models import IngestionResult, IngestionStatus, Document
 from app.services.rag.documents import DocumentProcessor
+from app.services.rag.models import Document, IngestionResult, IngestionStatus
 from app.services.rag.vectorstore import BaseVectorStore
 
 logger = logging.getLogger(__name__)
@@ -32,7 +31,7 @@ class IngestionService:
     def from_settings(
         cls,
         on_event: Callable[..., Awaitable[None]] | None = None,
-    ) -> "IngestionService":
+    ) -> IngestionService:
         """Build an IngestionService using the application's RAG settings."""
         from app.core.config import settings
         from app.services.rag.embeddings import EmbeddingService
@@ -52,9 +51,7 @@ class IngestionService:
             except Exception as e:
                 logger.warning(f"Webhook event dispatch failed: {e}")
 
-    async def _find_existing_by_source(
-        self, collection_name: str, source_path: str
-    ) -> str | None:
+    async def _find_existing_by_source(self, collection_name: str, source_path: str) -> str | None:
         """Find an existing document by source_path.
 
         Returns the document_id if found, None otherwise.
@@ -75,9 +72,7 @@ class IngestionService:
             pass
         return None
 
-    async def _find_existing_by_hash(
-        self, collection_name: str, content_hash: str
-    ) -> str | None:
+    async def _find_existing_by_hash(self, collection_name: str, content_hash: str) -> str | None:
         """Find an existing document by content hash (exact duplicate check)."""
         try:
             docs = await self.store.get_documents(collection_name)
@@ -140,14 +135,17 @@ class IngestionService:
 
             action = "replaced" if existing_id else "ingested"
 
-            await self._emit("rag.document.ingested", {
-                "document_id": document.id,
-                "filename": filepath.name,
-                "collection": collection_name,
-                "action": action,
-                "chunks": len(document.chunked_pages or []),
-                "source_path": document.metadata.source_path,
-            })
+            await self._emit(
+                "rag.document.ingested",
+                {
+                    "document_id": document.id,
+                    "filename": filepath.name,
+                    "collection": collection_name,
+                    "action": action,
+                    "chunks": len(document.chunked_pages or []),
+                    "source_path": document.metadata.source_path,
+                },
+            )
 
             return IngestionResult(
                 status=IngestionStatus.DONE,
@@ -156,7 +154,7 @@ class IngestionService:
             )
 
         except Exception as e:
-            logger.error(f"Ingestion error for {filepath.name}: {str(e)}")
+            logger.error(f"Ingestion error for {filepath.name}: {e!s}")
             return IngestionResult(
                 status=IngestionStatus.ERROR,
                 error_message=str(e),
@@ -188,11 +186,14 @@ class IngestionService:
                 collection_name=collection_name,
                 document_id=document_id,
             )
-            await self._emit("rag.document.deleted", {
-                "document_id": document_id,
-                "collection": collection_name,
-            })
+            await self._emit(
+                "rag.document.deleted",
+                {
+                    "document_id": document_id,
+                    "collection": collection_name,
+                },
+            )
             return True
         except Exception as e:
-            logger.error(f"Failed to delete document {document_id}: {str(e)}")
+            logger.error(f"Failed to delete document {document_id}: {e!s}")
             return False

@@ -1,4 +1,3 @@
-
 """RAG sync connectors — extensible source adapters for document ingestion."""
 
 import logging

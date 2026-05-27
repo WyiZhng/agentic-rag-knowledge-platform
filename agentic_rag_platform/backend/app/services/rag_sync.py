@@ -1,4 +1,3 @@
-
 """RAG sync service (PostgreSQL async).
 
 Contains business logic for managing RAG synchronization operations
@@ -32,9 +31,16 @@ class RAGSyncService:
         return RAGSyncLogList(
             items=[
                 RAGSyncLogItem(
-                    id=str(log.id), source=log.source, collection_name=log.collection_name,
-                    status=log.status, mode=log.mode, total_files=log.total_files,
-                    ingested=log.ingested, updated=log.updated, skipped=log.skipped, failed=log.failed,
+                    id=str(log.id),
+                    source=log.source,
+                    collection_name=log.collection_name,
+                    status=log.status,
+                    mode=log.mode,
+                    total_files=log.total_files,
+                    ingested=log.ingested,
+                    updated=log.updated,
+                    skipped=log.skipped,
+                    failed=log.failed,
                     error_message=log.error_message,
                     started_at=log.started_at.isoformat() if log.started_at else None,
                     completed_at=log.completed_at.isoformat() if log.completed_at else None,

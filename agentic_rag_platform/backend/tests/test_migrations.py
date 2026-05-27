@@ -1,4 +1,3 @@
-
 """Migration tests — verify Alembic upgrade/downgrade cycle.
 
 These tests ensure that:
@@ -57,6 +56,7 @@ class TestMigrations:
                 cwd=".",
             )
             assert result.returncode == 0, f"alembic {cmd} failed:\n{result.stderr}"
+
     def test_current_matches_head(self):
         """Test that current migration revision matches head after upgrade."""
         # Upgrade to head first
@@ -89,6 +89,5 @@ class TestMigrations:
         )
         assert result.returncode == 0
         assert "(head)" in result.stdout, (
-            f"Current revision is not at head:\n"
-            f"stdout: {result.stdout}\nstderr: {result.stderr}"
+            f"Current revision is not at head:\nstdout: {result.stdout}\nstderr: {result.stderr}"
         )

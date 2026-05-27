@@ -90,6 +90,7 @@ class TestRegisterCommands:
 
     def test_register_commands_adds_to_group(self):
         """Test that register_commands adds discovered commands to CLI group."""
+
         @click.group()
         def cli():
             pass

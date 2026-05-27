@@ -1,4 +1,3 @@
-
 """RAG configuration."""
 
 from enum import StrEnum
@@ -19,21 +18,53 @@ class DocumentExtensions(StrEnum):
 PYMUPDF_FORMATS: set[str] = {".pdf", ".docx", ".txt", ".md"}
 
 LITEPARSE_FORMATS: set[str] = {
-    ".pdf", ".docx", ".xlsx", ".pptx", ".txt", ".md",
-    ".jpg", ".jpeg", ".png", ".tiff",
+    ".pdf",
+    ".docx",
+    ".xlsx",
+    ".pptx",
+    ".txt",
+    ".md",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".tiff",
 }
 
 LLAMAPARSE_FORMATS: set[str] = {
     # Documents
-    ".pdf", ".docx", ".doc", ".pptx", ".ppt", ".rtf", ".txt", ".md", ".epub",
+    ".pdf",
+    ".docx",
+    ".doc",
+    ".pptx",
+    ".ppt",
+    ".rtf",
+    ".txt",
+    ".md",
+    ".epub",
     # Images
-    ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".bmp",
+    ".tiff",
+    ".webp",
     # Spreadsheets
-    ".xlsx", ".xls", ".csv", ".tsv", ".ods",
+    ".xlsx",
+    ".xls",
+    ".csv",
+    ".tsv",
+    ".ods",
     # Audio
-    ".mp3", ".mp4", ".wav", ".m4a", ".webm",
+    ".mp3",
+    ".mp4",
+    ".wav",
+    ".m4a",
+    ".webm",
     # Web
-    ".html", ".htm", ".xml",
+    ".html",
+    ".htm",
+    ".xml",
 }
 
 PARSER_FORMATS: dict[str, set[str]] = {
@@ -72,6 +103,7 @@ EMBEDDING_DIMENSIONS: dict[str, int] = {
 
 class EmbeddingsConfig(BaseModel):
     """Embeddings configuration. Dimension is auto-derived from model name."""
+
     model: str = "text-embedding-3-small"
     dim: int = 1536
 
@@ -81,8 +113,10 @@ class EmbeddingsConfig(BaseModel):
             self.dim = EMBEDDING_DIMENSIONS[self.model]
         return self
 
+
 class RerankerConfig(BaseModel):
     """Reranker configuration."""
+
     model: str = "cross_encoder"
 
 
@@ -94,6 +128,7 @@ class DocumentParser(BaseModel):
 
 class PdfParser(BaseModel):
     """PDF parsing settings."""
+
     method: str = "pymupdf"
 
 

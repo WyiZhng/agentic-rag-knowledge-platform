@@ -1,4 +1,3 @@
-
 """Conversation repository (PostgreSQL async).
 
 Contains database operations for Conversation, Message, and ToolCall entities.
@@ -8,13 +7,12 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import case, func, select, update as sql_update
+from sqlalchemy import String, func, select
+from sqlalchemy import update as sql_update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import String
 
 from app.db.models.conversation import Conversation, Message, ToolCall
-
 
 # Conversation Operations
 
@@ -54,9 +52,15 @@ async def get_conversations_by_user(
         query = query.where(Conversation.user_id == user_id)
     if not include_archived:
         query = query.where(Conversation.is_archived == False)  # noqa: E712
-    query = query.order_by(func.coalesce(Conversation.updated_at, Conversation.created_at).desc()).offset(skip).limit(limit)
+    query = (
+        query.order_by(func.coalesce(Conversation.updated_at, Conversation.created_at).desc())
+        .offset(skip)
+        .limit(limit)
+    )
     result = await db.execute(query)
     return list(result.scalars().all())
+
+
 async def get_all_conversations_with_count(
     db: AsyncSession,
     *,
@@ -87,9 +91,11 @@ async def get_all_conversations_with_count(
             | Conversation.id.cast(String).ilike(f"{safe_search}%", escape="\\")
         )
 
-    query = query.order_by(
-        func.coalesce(Conversation.updated_at, Conversation.created_at).desc()
-    ).offset(skip).limit(limit)
+    query = (
+        query.order_by(func.coalesce(Conversation.updated_at, Conversation.created_at).desc())
+        .offset(skip)
+        .limit(limit)
+    )
     result = await db.execute(query)
     rows = result.all()
 
@@ -280,7 +286,6 @@ async def get_messages_by_conversation(
     query = select(Message).where(Message.conversation_id == conversation_id)
     if include_tool_calls:
         query = query.options(selectinload(Message.tool_calls))
-    from app.db.models.chat_file import ChatFile
     query = query.options(selectinload(Message.files))
     query = query.order_by(Message.created_at.asc()).offset(skip).limit(limit)
     result = await db.execute(query)

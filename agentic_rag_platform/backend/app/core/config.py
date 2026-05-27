@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import computed_field, field_validator, model_validator, ValidationInfo
+from pydantic import computed_field, field_validator, ValidationInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -140,7 +140,6 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
 
-
     # === AI Agent (langgraph, openai) ===
     OPENAI_API_KEY: str = ""
     AI_MODEL: str = "gpt-5.5"
@@ -205,8 +204,7 @@ class Settings(BaseSettings):
         env = info.data.get("ENVIRONMENT", "local") if info.data else "local"
         if "*" in v and env == "production":
             raise ValueError(
-                "CORS_ORIGINS cannot contain '*' in production! "
-                "Specify explicit allowed origins."
+                "CORS_ORIGINS cannot contain '*' in production! Specify explicit allowed origins."
             )
         return v
 
@@ -215,6 +213,7 @@ class Settings(BaseSettings):
     def rag(self) -> "RAGSettings":
         """Build RAG-specific settings."""
         from app.services.rag.config import RAGSettings, DocumentParser, PdfParser, EmbeddingsConfig
+
         pdf_parser = PdfParser()
 
         return RAGSettings(
@@ -228,8 +227,11 @@ class Settings(BaseSettings):
             document_parser=DocumentParser(),
             pdf_parser=pdf_parser,
         )
+
+
 # Rebuild Settings to resolve RAGSettings forward reference
 from app.services.rag.config import RAGSettings
+
 Settings.model_rebuild()
 
 

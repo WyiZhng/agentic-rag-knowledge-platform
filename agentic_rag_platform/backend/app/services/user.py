@@ -6,10 +6,10 @@ Contains business logic for user operations. Uses UserRepository for database ac
 import logging
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.exceptions import AlreadyExistsError, AuthenticationError, NotFoundError
 from app.core.security import (
     create_magic_link_token,
@@ -30,8 +30,10 @@ if TYPE_CHECKING:
 
 class UserService:
     """Service for user-related business logic."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
+
     async def _repo(self, func, /, *args, **kwargs):
         """Invoke an async PostgreSQL repo function with the session."""
         return await func(self.db, *args, **kwargs)
@@ -203,7 +205,9 @@ class UserService:
 
         # Save new avatar
         storage_path = await storage.save(f"avatars/{user_id}", filename, file_data)
-        return await self._repo(user_repo.update, db_user=user, update_data={"avatar_url": storage_path})
+        return await self._repo(
+            user_repo.update, db_user=user, update_data={"avatar_url": storage_path}
+        )
 
     async def delete(self, user_id: UUID) -> User:
         """Delete user.
@@ -251,9 +255,7 @@ class UserService:
         try:
             user_id = UUID(str(payload["sub"]))
         except (TypeError, ValueError) as exc:
-            raise AuthenticationError(
-                message="Reset link is invalid or has expired"
-            ) from exc
+            raise AuthenticationError(message="Reset link is invalid or has expired") from exc
 
         user = await self.get_by_id(user_id)
         if not user.is_active:
@@ -287,9 +289,7 @@ class UserService:
         try:
             user_id = UUID(str(payload["sub"]))
         except (TypeError, ValueError) as exc:
-            raise AuthenticationError(
-                message="Magic link is invalid or has expired"
-            ) from exc
+            raise AuthenticationError(message="Magic link is invalid or has expired") from exc
 
         user = await self.get_by_id(user_id)
         if not user.is_active:

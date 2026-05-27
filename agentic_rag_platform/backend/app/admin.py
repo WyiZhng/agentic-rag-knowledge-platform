@@ -1,22 +1,20 @@
-
 """SQLAdmin configuration with automatic model discovery."""
 
 from typing import Any, ClassVar
 
 from fastapi import FastAPI
+from sqladmin import Admin, ModelView
+from sqladmin.authentication import AuthenticationBackend
 from sqlalchemy import String, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase
-from sqladmin import Admin, ModelView
-from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 
 from app.core.config import settings
 from app.core.security import verify_password
 from app.db.base import Base
+from app.db.models.conversation import ToolCall
 from app.db.models.user import User, UserRole
-from app.db.models.conversation import Conversation, Message, ToolCall
-
 
 # Columns that should be excluded from forms (sensitive data)
 SENSITIVE_COLUMN_PATTERNS: list[str] = [
@@ -121,10 +119,10 @@ def get_form_excluded_columns(model: type) -> list[str]:
     excluded = []
     for column_name in get_model_columns(model):
         # Exclude sensitive columns
-        if any(pattern in column_name.lower() for pattern in SENSITIVE_COLUMN_PATTERNS):
-            excluded.append(column_name)
-        # Exclude auto-generated columns
-        elif column_name in AUTO_GENERATED_COLUMNS:
+        if (
+            any(pattern in column_name.lower() for pattern in SENSITIVE_COLUMN_PATTERNS)
+            or column_name in AUTO_GENERATED_COLUMNS
+        ):
             excluded.append(column_name)
     return excluded
 

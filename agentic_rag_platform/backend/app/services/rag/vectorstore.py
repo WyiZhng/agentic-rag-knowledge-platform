@@ -3,8 +3,14 @@ import re
 from abc import ABC, abstractmethod
 from typing import Any
 
-from app.services.rag.models import CollectionInfo, Document, DocumentPageChunk, SearchResult, DocumentInfo
 from app.schemas.rag import RAGDocumentItem, RAGDocumentList
+from app.services.rag.models import (
+    CollectionInfo,
+    Document,
+    DocumentInfo,
+    DocumentPageChunk,
+    SearchResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +84,9 @@ class BaseVectorStore(ABC):
             raise ValueError(f"'{name}' is a reserved collection name")
         await self._ensure_collection(name)
 
-    def _build_chunk_metadata(self, chunk: "DocumentPageChunk", document: Document) -> dict[str, Any]:
+    def _build_chunk_metadata(
+        self, chunk: "DocumentPageChunk", document: Document
+    ) -> dict[str, Any]:
         """Build metadata dict for a chunk."""
         meta = {
             "page_num": chunk.page_num,
@@ -123,10 +131,12 @@ class BaseVectorStore(ABC):
             )
             for d in doc_map.values()
         ]
+
+
 import json
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings as app_settings
@@ -137,8 +147,11 @@ from app.services.rag.embeddings import EmbeddingService
 def _validate_collection_name(name: str) -> str:
     """Validate collection name to prevent SQL injection."""
     import re
+
     if not re.match(r"^[a-zA-Z0-9_]+$", name):
-        raise ValueError(f"Invalid collection name: {name}. Only alphanumeric and underscores allowed.")
+        raise ValueError(
+            f"Invalid collection name: {name}. Only alphanumeric and underscores allowed."
+        )
     return name
 
 
@@ -165,7 +178,8 @@ class PgVectorStore(BaseVectorStore):
         table = self._table(name)
         async with self.async_session() as session:
             await session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-            await session.execute(text(f"""
+            await session.execute(
+                text(f"""
                 CREATE TABLE IF NOT EXISTS {table} (
                     id VARCHAR(100) PRIMARY KEY,
                     parent_doc_id VARCHAR(100),
@@ -173,11 +187,14 @@ class PgVectorStore(BaseVectorStore):
                     embedding vector({self.dim}),
                     metadata JSONB DEFAULT '{{}}'::jsonb
                 )
-            """))
-            await session.execute(text(f"""
+            """)
+            )
+            await session.execute(
+                text(f"""
                 CREATE INDEX IF NOT EXISTS {table}_embedding_idx
                 ON {table} USING hnsw (embedding vector_cosine_ops)
-            """))
+            """)
+            )
             await session.commit()
 
     async def insert_document(self, collection_name: str, document: Document) -> None:
@@ -205,7 +222,9 @@ class PgVectorStore(BaseVectorStore):
                 )
             await session.commit()
 
-    async def search(self, collection_name: str, query: str, limit: int = 4, filter: str = "") -> list[SearchResult]:
+    async def search(
+        self, collection_name: str, query: str, limit: int = 4, filter: str = ""
+    ) -> list[SearchResult]:
         table = self._table(collection_name)
         query_vector = self.embedder.embed_query(query)
         async with self.async_session() as session:
@@ -257,12 +276,13 @@ class PgVectorStore(BaseVectorStore):
         table = self._table(collection_name)
         await self._ensure_collection(collection_name)
         async with self.async_session() as session:
-            result = await session.execute(
-                text(f"SELECT parent_doc_id, metadata FROM {table}")
-            )
+            result = await session.execute(text(f"SELECT parent_doc_id, metadata FROM {table}"))
             rows = result.fetchall()
         results = [
-            {"parent_doc_id": row[0], "metadata": row[1] if isinstance(row[1], dict) else json.loads(row[1])}
+            {
+                "parent_doc_id": row[0],
+                "metadata": row[1] if isinstance(row[1], dict) else json.loads(row[1]),
+            }
             for row in rows
         ]
         return self._group_documents(results)
@@ -270,6 +290,8 @@ class PgVectorStore(BaseVectorStore):
     async def list_collections(self) -> list[str]:
         async with self.async_session() as session:
             result = await session.execute(
-                text("SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'rag_%' AND table_schema = 'public'")
+                text(
+                    "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'rag_%' AND table_schema = 'public'"
+                )
             )
             return [row[0].replace("rag_", "") for row in result.fetchall()]

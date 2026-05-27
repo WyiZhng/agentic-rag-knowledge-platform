@@ -1,5 +1,5 @@
-
 from abc import ABC, abstractmethod
+
 from openai import OpenAI
 
 from app.services.rag.config import RAGSettings
@@ -11,6 +11,7 @@ class BaseEmbeddingProvider(ABC):
 
     Defines the interface that all embedding providers must implement.
     """
+
     @abstractmethod
     def embed_queries(self, texts: list[str]) -> list[list[float]]:
         """Embed a list of query texts.
@@ -39,6 +40,8 @@ class BaseEmbeddingProvider(ABC):
     def warmup(self) -> None:
         """Ensures the model is loaded and ready for inference."""
         pass
+
+
 class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
     """OpenAI embedding provider using the OpenAI API.
 
@@ -75,7 +78,9 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
         Returns:
             List of embedding vectors for each chunk.
         """
-        texts = [doc.chunk_content if doc.chunk_content else "" for doc in (document.chunked_pages or [])]
+        texts = [
+            doc.chunk_content if doc.chunk_content else "" for doc in (document.chunked_pages or [])
+        ]
         return self.embed_queries(texts)
 
     def warmup(self) -> None:
@@ -84,6 +89,7 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
         OpenAI API is a remote service, so this is a no-op.
         """
         pass
+
 
 # Embedding orchestrator
 class EmbeddingService:

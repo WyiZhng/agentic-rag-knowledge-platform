@@ -1,4 +1,3 @@
-
 """Sync source configuration schemas."""
 
 from typing import Any

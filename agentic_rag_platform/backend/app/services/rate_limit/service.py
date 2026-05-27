@@ -1,4 +1,3 @@
-
 """RateLimitService — per-category, per-plan, sliding-window rate limiter."""
 
 from __future__ import annotations
@@ -75,19 +74,25 @@ async def check_rate_limit(
 
     # Check IP limit
     if rule.per_ip is not None:
-        result = await _check_one(storage, f"rl:{category}:ip:{ip}", rule.per_ip, rule.ip_period_seconds)
+        result = await _check_one(
+            storage, f"rl:{category}:ip:{ip}", rule.per_ip, rule.ip_period_seconds
+        )
         if not result.allowed:
             _raise_429(result, category, "ip")
 
     # Check per-user limit
     if rule.per_user is not None and user_id:
-        result = await _check_one(storage, f"rl:{category}:user:{user_id}", rule.per_user, rule.period_seconds)
+        result = await _check_one(
+            storage, f"rl:{category}:user:{user_id}", rule.per_user, rule.period_seconds
+        )
         if not result.allowed:
             _raise_429(result, category, "user")
 
     # Check per-org limit
     if rule.per_org is not None and org_id:
-        result = await _check_one(storage, f"rl:{category}:org:{org_id}", rule.per_org, rule.org_period_seconds)
+        result = await _check_one(
+            storage, f"rl:{category}:org:{org_id}", rule.per_org, rule.org_period_seconds
+        )
         if not result.allowed:
             _raise_429(result, category, "org")
 
@@ -100,7 +105,7 @@ def _raise_429(result: RateLimitResult, category: str, scope: str) -> None:
             "error": {
                 "code": "RATE_LIMIT_EXCEEDED",
                 "message": f"Rate limit exceeded for category '{category}' (scope: {scope}). "
-                           f"Retry after {retry_after} seconds.",
+                f"Retry after {retry_after} seconds.",
                 "details": {
                     "category": category,
                     "scope": scope,
@@ -126,7 +131,8 @@ def make_rate_limit_dep(category: str):
             ...
     """
     from fastapi import Depends
-    from app.api.deps import CurrentUser, ActiveOrg
+
+    from app.api.deps import ActiveOrg, CurrentUser
 
     async def _dep(request: Request, user: CurrentUser, active_org: ActiveOrg) -> None:
         plan_features: dict | None = None

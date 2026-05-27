@@ -1,4 +1,3 @@
-
 """SyncLog model — tracks document synchronization history."""
 
 import uuid
@@ -14,7 +13,9 @@ from app.db.base import Base, TimestampMixin
 class SyncLog(TimestampMixin, Base):
     __tablename__ = "sync_logs"
 
-    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     source: Mapped[str] = mapped_column(String(20), nullable=False)
     collection_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     sync_source_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -28,5 +29,7 @@ class SyncLog(TimestampMixin, Base):
     skipped: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     failed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

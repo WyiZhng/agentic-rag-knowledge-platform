@@ -1,4 +1,3 @@
-
 """Per-connection AI agent session (LangGraph)."""
 
 import logging
@@ -9,12 +8,12 @@ from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 from langchain_core.messages.ai import add_usage
 
 from app.agents.langgraph_assistant import AgentContext, get_agent
+from app.db.models.user import User
 from app.services.agent import (
     persist_assistant_turn,
     persist_user_turn,
     send_event,
 )
-from app.db.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -71,9 +70,7 @@ class AgentSession:
 
             if final_output:
                 self.conversation_history.append({"role": "user", "content": user_message})
-                self.conversation_history.append(
-                    {"role": "assistant", "content": final_output}
-                )
+                self.conversation_history.append({"role": "assistant", "content": final_output})
             assistant_msg_id: str | None = None
             if self.current_conversation_id and final_output:
                 assistant_msg_id = await persist_assistant_turn(
@@ -167,14 +164,9 @@ class AgentSession:
                     out += block.get("thinking", "") or ""
                 elif btype == "reasoning":
                     for summary in block.get("summary", []) or []:
-                        if (
-                            isinstance(summary, dict)
-                            and summary.get("type") == "summary_text"
-                        ):
+                        if isinstance(summary, dict) and summary.get("type") == "summary_text":
                             out += summary.get("text", "") or ""
-        legacy = (getattr(message, "additional_kwargs", None) or {}).get(
-            "reasoning_content"
-        )
+        legacy = (getattr(message, "additional_kwargs", None) or {}).get("reasoning_content")
         if isinstance(legacy, str):
             out += legacy
         return out
@@ -206,9 +198,7 @@ class AgentSession:
         reasoning_content = self._extract_reasoning(chunk)
         if reasoning_content:
             self._thinking_streamed = True
-            await send_event(
-                self.websocket, "thinking_delta", {"content": reasoning_content}
-            )
+            await send_event(self.websocket, "thinking_delta", {"content": reasoning_content})
         return text_content
 
     async def _stream_update_event(

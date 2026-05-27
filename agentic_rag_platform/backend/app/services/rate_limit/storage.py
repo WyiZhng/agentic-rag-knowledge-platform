@@ -1,4 +1,3 @@
-
 """Rate limit storage implementations — Redis sliding window and in-memory fallback."""
 
 from __future__ import annotations
@@ -28,13 +27,17 @@ class RateLimitStorage(Protocol):
     async def increment_and_check(
         self, key: str, limit: int, period_seconds: int
     ) -> RateLimitResult: ...
+
+
 class RedisSlidingWindowStorage:
     """Sliding window log algorithm backed by Redis sorted sets."""
 
     def __init__(self, redis) -> None:
         self.redis = redis
 
-    async def increment_and_check(self, key: str, limit: int, period_seconds: int) -> RateLimitResult:
+    async def increment_and_check(
+        self, key: str, limit: int, period_seconds: int
+    ) -> RateLimitResult:
         now_ms = int(time.time() * 1000)
         window_start_ms = now_ms - (period_seconds * 1000)
         member = f"{now_ms}:{secrets.token_hex(4)}"
@@ -88,7 +91,9 @@ class InMemoryStorage:
         self._windows: dict[str, list[float]] = defaultdict(list)
         self._lock = asyncio.Lock()
 
-    async def increment_and_check(self, key: str, limit: int, period_seconds: int) -> RateLimitResult:
+    async def increment_and_check(
+        self, key: str, limit: int, period_seconds: int
+    ) -> RateLimitResult:
         async with self._lock:
             now = time.time()
             window_start = now - period_seconds
@@ -118,6 +123,7 @@ class InMemoryStorage:
 
 def get_storage() -> RateLimitStorage:
     from app.core.cache import get_redis
+
     try:
         redis = get_redis()
         if redis is not None:

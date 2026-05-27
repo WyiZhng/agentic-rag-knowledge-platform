@@ -10,15 +10,17 @@ Houses framework-agnostic helpers used by every WebSocket agent route:
 Framework-specific concerns (multimodal input, streaming events) stay in the route.
 """
 
-import logging
-from typing import Any
 import json
+import logging
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from fastapi import WebSocket, WebSocketDisconnect
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+
 from app.api.deps import get_conversation_service
+from app.db.session import get_db_context
 from app.schemas.conversation import (
     ConversationCreate,
     ConversationUpdate,
@@ -26,7 +28,6 @@ from app.schemas.conversation import (
     ToolCallComplete,
     ToolCallCreate,
 )
-from app.db.session import get_db_context
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,9 @@ class AgentConnectionManager:
         """Remove a WebSocket connection."""
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
-        logger.info(f"Agent WebSocket disconnected. Total connections: {len(self.active_connections)}")
+        logger.info(
+            f"Agent WebSocket disconnected. Total connections: {len(self.active_connections)}"
+        )
 
     async def send_event(self, websocket: WebSocket, event_type: str, data: Any) -> bool:
         """Forward to the module-level :func:`send_event`."""
@@ -113,7 +116,9 @@ async def persist_user_turn(
 
             if requested_conversation_id:
                 current_conversation_id = requested_conversation_id
-                conv = await conv_service.get_conversation(UUID(requested_conversation_id), user_id=user.id)
+                conv = await conv_service.get_conversation(
+                    UUID(requested_conversation_id), user_id=user.id
+                )
                 if not conv.title and user_message:
                     await conv_service.update_conversation(
                         UUID(requested_conversation_id),

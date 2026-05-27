@@ -1,4 +1,3 @@
-
 """
 RAG CLI commands for document management and retrieval.
 
@@ -13,23 +12,24 @@ Commands:
     rag-source-remove - Remove a sync source
     rag-source-sync   - Trigger sync for a source (or all)
 """
+
 import asyncio
-import os
 from pathlib import Path
 
 import click
 
-from app.commands import command, info, success, error, warning
+from app.commands import command, error, info, success, warning
 from app.services.rag.config import DocumentExtensions, RAGSettings
 from app.services.rag.documents import DocumentProcessor
 from app.services.rag.embeddings import EmbeddingService
 from app.services.rag.ingestion import IngestionService
 from app.services.rag.retrieval import RetrievalService
-from app.services.rag.vectorstore import BaseVectorStore
-from app.services.rag.vectorstore import PgVectorStore
+from app.services.rag.vectorstore import BaseVectorStore, PgVectorStore
 
 
-def get_rag_services() -> tuple[RAGSettings, BaseVectorStore, DocumentProcessor, RetrievalService, IngestionService]:
+def get_rag_services() -> tuple[
+    RAGSettings, BaseVectorStore, DocumentProcessor, RetrievalService, IngestionService
+]:
     """Initialize RAG services for CLI usage.
 
     Creates and returns all necessary RAG service components:
@@ -137,10 +137,12 @@ async def ingest_path_async(
         return
 
     import hashlib
+
+    from tqdm import tqdm
+
     from app.db.session import get_db_context
     from app.services.rag_document import RAGDocumentService
     from app.services.rag_sync import RAGSyncService
-    from tqdm import tqdm
 
     info(f"Syncing {len(files)} file(s) into '{collection}' (mode={sync_mode})...")
 
@@ -168,7 +170,9 @@ async def ingest_path_async(
                     if existing_id:
                         # File exists — check if content changed via hash
                         file_hash: str = hashlib.sha256(filepath.read_bytes()).hexdigest()
-                        existing_hash: str | None = await ingestion.get_existing_hash(collection, source_path)
+                        existing_hash: str | None = await ingestion.get_existing_hash(
+                            collection, source_path
+                        )
                         if existing_hash and file_hash == existing_hash:
                             skipped_count += 1
                             continue
@@ -196,7 +200,9 @@ async def ingest_path_async(
                 doc_id = str(rag_doc.id)
 
             try:
-                result = await ingestion.ingest_file(filepath=filepath, collection_name=collection, replace=replace)
+                result = await ingestion.ingest_file(
+                    filepath=filepath, collection_name=collection, replace=replace
+                )
                 if result.status.value == "done":
                     success_count += 1
                     if result.message and "replaced" in result.message:
@@ -214,7 +220,7 @@ async def ingest_path_async(
                         )
             except Exception as e:
                 error_count += 1
-                tqdm.write(f"  ✗ {filepath.name}: {str(e)}")
+                tqdm.write(f"  ✗ {filepath.name}: {e!s}")
                 async with get_db_context() as db:
                     await RAGDocumentService(db).fail_ingestion(doc_id, error_message=str(e))
     # Update SyncLog
@@ -278,7 +284,9 @@ def rag_ingest(path: str, collection: str, recursive: bool, replace: bool, sync_
     """
     _, vector_store, processor, _, ingestion = get_rag_services()
     asyncio.run(
-        ingest_path_async(path, collection, recursive, vector_store, processor, ingestion, replace, sync_mode)
+        ingest_path_async(
+            path, collection, recursive, vector_store, processor, ingestion, replace, sync_mode
+        )
     )
 
 
@@ -355,11 +363,7 @@ def rag_search(query: str, collection: str, top_k: int) -> None:
     asyncio.run(search_async(query, collection, top_k, retrieval))
 
 
-async def drop_collection_async(
-    collection: str,
-    yes: bool,
-    vector_store: BaseVectorStore
-) -> None:
+async def drop_collection_async(collection: str, yes: bool, vector_store: BaseVectorStore) -> None:
     """Drop a collection.
 
     Args:
@@ -410,10 +414,7 @@ def rag_stats() -> None:
     asyncio.run(stats_async(settings, vector_store))
 
 
-async def stats_async(
-    settings: RAGSettings,
-    vector_store: BaseVectorStore
-) -> None:
+async def stats_async(settings: RAGSettings, vector_store: BaseVectorStore) -> None:
     """Show RAG system statistics.
 
     Args:
@@ -484,7 +485,7 @@ def rag_sources() -> None:
                 if s.schedule_minutes:
                     click.echo(f"    Schedule: every {s.schedule_minutes} min")
                 else:
-                    click.echo(f"    Schedule: manual")
+                    click.echo("    Schedule: manual")
                 click.echo(f"    Last sync: {status_str}")
                 if s.last_error:
                     click.echo(f"    Last error: {s.last_error}")
@@ -498,9 +499,27 @@ def rag_sources() -> None:
 @click.option("--type", "connector_type", required=True, help="Connector type (e.g. gdrive, s3)")
 @click.option("--collection", required=True, help="Target collection name")
 @click.option("--config", "config_json", required=True, help="Config JSON string")
-@click.option("--sync-mode", default="new_only", type=click.Choice(["full", "new_only", "update_only"]), help="Sync mode")
-@click.option("--schedule", "schedule_minutes", type=int, default=0, help="Schedule interval in minutes (0=manual)")
-def rag_source_add(name: str, connector_type: str, collection: str, config_json: str, sync_mode: str, schedule_minutes: int) -> None:
+@click.option(
+    "--sync-mode",
+    default="new_only",
+    type=click.Choice(["full", "new_only", "update_only"]),
+    help="Sync mode",
+)
+@click.option(
+    "--schedule",
+    "schedule_minutes",
+    type=int,
+    default=0,
+    help="Schedule interval in minutes (0=manual)",
+)
+def rag_source_add(
+    name: str,
+    connector_type: str,
+    collection: str,
+    config_json: str,
+    sync_mode: str,
+    schedule_minutes: int,
+) -> None:
     """
     Add a new sync source configuration.
 

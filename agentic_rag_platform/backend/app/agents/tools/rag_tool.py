@@ -1,8 +1,6 @@
-
 """RAG tool for agent knowledge base search."""
 
 import asyncio
-import contextvars
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
@@ -21,9 +19,9 @@ def _get_retrieval_service() -> "BaseRetrievalService":
     if _retrieval_service is not None:
         return _retrieval_service
     from app.core.config import settings
+    from app.services.rag.embeddings import EmbeddingService
     from app.services.rag.retrieval import RetrievalService
     from app.services.rag.vectorstore import PgVectorStore
-    from app.services.rag.embeddings import EmbeddingService
 
     rag_settings = settings.rag
     embedding_service = EmbeddingService(rag_settings)
@@ -53,7 +51,11 @@ def _format_results(results: list) -> str:
             f"[{i}] Source: {source}{page_info}{chunk_info}{col_info} (score: {result.score:.3f})\n"
             f"{result.content}"
         )
-    return "Search results (cite sources using [1], [2], etc. in your response):\n\n" + "\n\n".join(formatted)
+    return "Search results (cite sources using [1], [2], etc. in your response):\n\n" + "\n\n".join(
+        formatted
+    )
+
+
 async def search_knowledge_base(
     query: str,
     collection: str | None = None,
@@ -138,4 +140,6 @@ def search_knowledge_base_sync(
     except Exception as e:
         logger.error("search_knowledge_base_sync failed: %s", str(e), exc_info=True)
         raise
+
+
 __all__ = ["search_knowledge_base", "search_knowledge_base_sync"]
