@@ -142,6 +142,7 @@ class Settings(BaseSettings):
 
     # === AI Agent (langgraph, openai) ===
     OPENAI_API_KEY: str = ""
+    AI_BASE_URL: str | None = None  # Custom base URL for OpenAI-compatible APIs (OpenRouter, Ollama, DeepSeek, etc.)
     AI_MODEL: str = "gpt-5.5"
     AI_TEMPERATURE: float = 0.7
     AI_THINKING_ENABLED: bool = False
@@ -166,6 +167,7 @@ class Settings(BaseSettings):
 
     # Embeddings
     EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_BASE_URL: str | None = None  # Custom base URL for embedding API (defaults to OpenAI)
 
     # Chunking
     RAG_CHUNK_SIZE: int = 512

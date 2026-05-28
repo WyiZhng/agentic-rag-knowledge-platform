@@ -123,6 +123,8 @@ class LangGraphAssistant:
         # OpenAI: ``reasoning`` is honored only by the Responses API. Summary
         # blocks stream through as content; the model never returns raw CoT.
         openai_kwargs: dict[str, Any] = {}
+        if settings.AI_BASE_URL:
+            openai_kwargs["base_url"] = settings.AI_BASE_URL
         if self.thinking_effort:
             openai_kwargs["reasoning"] = {
                 "effort": self.thinking_effort,

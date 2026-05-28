@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from openai import OpenAI
 
+from app.core.config import settings as app_settings
 from app.services.rag.config import RAGSettings
 from app.services.rag.models import Document
 
@@ -55,7 +56,11 @@ class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
             model: The OpenAI embedding model name (e.g., 'text-embedding-3-small').
         """
         self.model = model
-        self.client = OpenAI()
+        client_kwargs = {}
+        embedding_base_url = app_settings.EMBEDDING_BASE_URL or app_settings.AI_BASE_URL
+        if embedding_base_url:
+            client_kwargs["base_url"] = embedding_base_url
+        self.client = OpenAI(**client_kwargs)
 
     def embed_queries(self, texts: list[str]) -> list[list[float]]:
         """Embed a list of query texts using OpenAI.
