@@ -626,86 +626,6 @@ if os.path.exists(backend_dir):
     else:
         print("Warning: uv not found. Run 'uv lock' in backend/ to generate lock file.")
 
-# Run ruff to auto-fix import sorting and other linting issues
-if os.path.exists(backend_dir):
-    ruff_cmd = None
-
-    # Try multiple methods to find/run ruff
-    # 1. Check if ruff is in PATH
-    ruff_path = shutil.which("ruff")
-    if ruff_path:
-        ruff_cmd = [ruff_path]
-    # 2. Try uvx ruff (if uv is installed)
-    elif shutil.which("uvx"):
-        ruff_cmd = ["uvx", "ruff"]
-    # 3. Try python -m ruff
-    else:
-        # Test if ruff is available as a module
-        result = subprocess.run(
-            [sys.executable, "-m", "ruff", "--version"],
-            capture_output=True,
-            check=False,
-        )
-        if result.returncode == 0:
-            ruff_cmd = [sys.executable, "-m", "ruff"]
-
-    if ruff_cmd:
-        print(f"Running ruff to format code (using: {' '.join(ruff_cmd)})...")
-        # Run ruff check --fix to auto-fix issues (suppress output)
-        subprocess.run(
-            [*ruff_cmd, "check", "--fix", "--quiet", backend_dir],
-            check=False,
-            capture_output=True,
-        )
-        # Run ruff format for consistent formatting (suppress output)
-        subprocess.run(
-            [*ruff_cmd, "format", "--quiet", backend_dir],
-            check=False,
-            capture_output=True,
-        )
-        print("Code formatting complete.")
-    else:
-        print("Warning: ruff not found. Run 'ruff format .' in backend/ to format code.")
-
-# Format frontend with prettier if it exists
-frontend_dir = os.path.join(os.getcwd(), "frontend")
-if use_frontend and os.path.exists(frontend_dir):
-    # Try to find bun or npx for running prettier
-    bun_cmd = shutil.which("bun")
-    npx_cmd = shutil.which("npx")
-
-    if bun_cmd:
-        print("Installing frontend dependencies and formatting with Prettier...")
-        # Install dependencies first (prettier is a devDependency)
-        result = subprocess.run(
-            [bun_cmd, "install"],
-            cwd=frontend_dir,
-            capture_output=True,
-            check=False,
-        )
-        if result.returncode == 0:
-            # Format with prettier
-            subprocess.run(
-                [bun_cmd, "run", "format"],
-                cwd=frontend_dir,
-                capture_output=True,
-                check=False,
-            )
-            print("Frontend formatting complete.")
-        else:
-            print("Warning: Failed to install frontend dependencies.")
-    elif npx_cmd:
-        print("Formatting frontend with Prettier...")
-        subprocess.run(
-            [npx_cmd, "prettier", "--write", "."],
-            cwd=frontend_dir,
-            capture_output=True,
-            check=False,
-        )
-        print("Frontend formatting complete.")
-    else:
-        print("Warning: bun/npx not found. Run 'bun run format' in frontend/ to format code.")
-
 # --- Teams: remove teams-specific files if enable_teams is false ---
 if not enable_teams:
     remove_file(os.path.join(backend_app, "db", "models", "organization.py"))
@@ -1076,5 +996,47 @@ if not enable_storybook and use_frontend:
     if os.path.exists(storybook_dir):
         shutil.rmtree(storybook_dir)
         print("Removed frontend/.storybook/ (storybook not enabled)")
+
+
+# Format the final backend after all conditional cleanup has completed. Validate
+# each candidate first so a stale executable from a moved virtualenv is skipped.
+ruff_candidates = []
+ruff_path = shutil.which("ruff")
+if ruff_path:
+    ruff_candidates.append([ruff_path])
+uvx_path = shutil.which("uvx")
+if uvx_path:
+    ruff_candidates.append([uvx_path, "ruff"])
+ruff_candidates.append([sys.executable, "-m", "ruff"])
+
+ruff_cmd = None
+for candidate in ruff_candidates:
+    result = subprocess.run(
+        [*candidate, "--version"],
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+    if result.returncode == 0:
+        ruff_cmd = candidate
+        break
+
+if ruff_cmd and os.path.exists(backend_dir):
+    print(f"Formatting final backend with Ruff (using: {' '.join(ruff_cmd)})...")
+    for ruff_args in (("check", "--fix", "."), ("format", ".")):
+        result = subprocess.run(
+            [*ruff_cmd, *ruff_args],
+            cwd=backend_dir,
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+        if result.returncode != 0:
+            print(result.stdout)
+            print(result.stderr, file=sys.stderr)
+            raise RuntimeError(f"Ruff {' '.join(ruff_args)} failed")
+    print("Backend formatting complete.")
+else:
+    print("Warning: Ruff not found. Run 'uv run ruff check --fix .' in backend/.")
 
 print("Project generated successfully!")

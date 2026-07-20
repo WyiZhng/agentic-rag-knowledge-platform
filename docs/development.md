@@ -335,14 +335,11 @@ ruff format .
 ruff format . --check
 ```
 
-### Mypy (Type Checking)
+### ty (Type Checking)
 
 ```bash
-# Run type checker
-mypy app
-
-# With specific options
-mypy app --strict --ignore-missing-imports
+# Run type checker using the generated project configuration
+uv run ty check
 ```
 
 ### Pre-commit Hooks
@@ -369,11 +366,10 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
+  - repo: https://github.com/astral-sh/ty-pre-commit
+    rev: v0.0.29
     hooks:
-      - id: mypy
-        additional_dependencies: [pydantic]
+      - id: ty
 ```
 
 ---

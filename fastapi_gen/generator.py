@@ -224,7 +224,7 @@ def post_generation_tasks(project_path: Path, config: ProjectConfig) -> None:
 
     if config.rag_features.enable_rag:
         vs = config.rag_features.vector_store.value
-        slug = config.project_name
+        slug = config.project_slug
         console.print()
         console.print(f"[bold cyan]RAG ({vs}):[/]")
         console.print(f"  uv run {slug} rag-ingest /path/to/docs/ --collection documents")

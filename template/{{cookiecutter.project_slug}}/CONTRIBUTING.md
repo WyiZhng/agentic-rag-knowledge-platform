@@ -5,7 +5,7 @@
 ```bash
 # Backend (uv-based)
 cd backend
-uv sync                    # install all deps including dev extras
+uv sync --extra dev        # install runtime and development dependencies
 cp .env.example .env       # then fill in required vars (see ENV_VARS.md)
 uv run uvicorn app.main:app --reload --port {{ cookiecutter.backend_port }}
 {% if cookiecutter.use_postgresql or cookiecutter.use_sqlite %}uv run alembic upgrade head  # apply migrations
@@ -25,7 +25,7 @@ docker compose up
 
 ## Code style
 
-- **Python:** ruff (`uv run ruff check . --fix && uv run ruff format .`). Line length 120.
+- **Python:** ruff (`uv run ruff check . --fix && uv run ruff format .`). Line length 100.
 - **Type hints:** modern syntax (`str | None`, `list[X]`, `dict[str, Any]`). Use `Annotated[T, Depends(...)]` for DI in route signatures.
 {%- if cookiecutter.use_frontend %}
 - **TypeScript:** strict mode, no `any` unless typed external API. ESLint + Prettier (run `bun run lint`).

@@ -302,7 +302,7 @@ class ProjectConfig(BaseModel):
     logfire_features: LogfireFeatures = Field(default_factory=LogfireFeatures)
 
     # Background tasks
-    background_tasks: BackgroundTaskType = BackgroundTaskType.CELERY
+    background_tasks: BackgroundTaskType = BackgroundTaskType.NONE
 
     # Optional integrations
     enable_redis: bool = False

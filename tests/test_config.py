@@ -105,10 +105,11 @@ class TestProjectConfig:
     """Tests for ProjectConfig model."""
 
     def test_minimal_config(self) -> None:
-        """Test minimal valid configuration."""
-        config = ProjectConfig(project_name="myproject", background_tasks=BackgroundTaskType.NONE)
+        """Test that model defaults form a valid configuration."""
+        config = ProjectConfig(project_name="myproject")
         assert config.project_name == "myproject"
         assert config.database == DatabaseType.POSTGRESQL
+        assert config.background_tasks == BackgroundTaskType.NONE
 
     def test_valid_project_names(self) -> None:
         """Test valid project name patterns."""
@@ -781,7 +782,9 @@ class TestEmailValidation:
             "user123@example.co.uk",
         ]
         for email in valid_emails:
-            config = ProjectConfig(project_name="test", author_email=email, background_tasks=BackgroundTaskType.NONE)
+            config = ProjectConfig(
+                project_name="test", author_email=email, background_tasks=BackgroundTaskType.NONE
+            )
             assert config.author_email == email
 
     def test_invalid_email_raises_error(self) -> None:
@@ -795,7 +798,11 @@ class TestEmailValidation:
         ]
         for email in invalid_emails:
             with pytest.raises(ValidationError):
-                ProjectConfig(project_name="test", author_email=email, background_tasks=BackgroundTaskType.NONE)
+                ProjectConfig(
+                    project_name="test",
+                    author_email=email,
+                    background_tasks=BackgroundTaskType.NONE,
+                )
 
 
 class TestRateLimitConfig:

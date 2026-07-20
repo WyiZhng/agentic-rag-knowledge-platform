@@ -37,7 +37,7 @@ git commit --amend -s
    uv run ty check
    ```
 5. **Commit** with sign-off (`git commit -s`)
-6. **Open a Pull Request** against `main`
+6. **Open a Pull Request** against the repository's default branch
 
 ## Development Setup
 

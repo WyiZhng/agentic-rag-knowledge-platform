@@ -5,7 +5,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fastapi_gen.config import BackgroundTaskType, DatabaseType, FrontendType, ProjectConfig, RAGFeatures, VectorStoreType
+from fastapi_gen.config import (
+    BackgroundTaskType,
+    DatabaseType,
+    FrontendType,
+    ProjectConfig,
+    RAGFeatures,
+    VectorStoreType,
+)
 from fastapi_gen.generator import (
     TEMPLATE_DIR,
     _find_template_dir,

@@ -51,18 +51,12 @@ dependencies = [
     "pydantic>=2.13.0",
     "pydantic-settings>=2.13.0",
     "email-validator>=2.3.0",
-    "httpx>=0.28.1",
-    "pytest>=9.0.3",
-    "pytest-asyncio>=1.3.0",
-    "celery>=5.6.3",
-    "taskiq>=0.12.4",
-    "arq>=0.28.0",
-    "stripe>=15.1.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=9.0.0",
+    "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.0.0",
     "ruff>=0.14.0",
     "ty>=0.0.31",
@@ -104,11 +98,12 @@ include = [
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-# Exclude Jinja2 template files and generated test projects
-exclude = [
+# Exclude Jinja2 sources and generated-project snapshots. Ruff's default
+# exclusions (including virtual environments) remain active.
+extend-exclude = [
     "template",
-    "test",
-    "test_*",
+    "ai_agent_test",
+    "agentic_rag_platform",
 ]
 
 [tool.ruff.lint]
@@ -153,6 +148,7 @@ exclude = [
     "template/",
     "tests/",
     "ai_agent_test/",
+    "agentic_rag_platform/",
 ]
 
 [tool.pytest.ini_options]

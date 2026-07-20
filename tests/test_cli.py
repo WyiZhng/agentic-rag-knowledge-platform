@@ -115,7 +115,9 @@ class TestNewCommand:
         tmp_path: Path,
     ) -> None:
         """Test new command in interactive mode."""
-        mock_prompts.return_value = ProjectConfig(project_name="testproject", background_tasks=BackgroundTaskType.NONE)
+        mock_prompts.return_value = ProjectConfig(
+            project_name="testproject", background_tasks=BackgroundTaskType.NONE
+        )
         mock_confirm.return_value = True
         mock_generate.return_value = tmp_path / "testproject"
 
@@ -138,7 +140,9 @@ class TestNewCommand:
         runner: CliRunner,
     ) -> None:
         """Test new command cancelled by user."""
-        mock_prompts.return_value = ProjectConfig(project_name="testproject", background_tasks=BackgroundTaskType.NONE)
+        mock_prompts.return_value = ProjectConfig(
+            project_name="testproject", background_tasks=BackgroundTaskType.NONE
+        )
         mock_confirm.return_value = False
 
         result = runner.invoke(new, [])
@@ -218,7 +222,9 @@ class TestNewCommand:
         tmp_path: Path,
     ) -> None:
         """Test new command in interactive mode with output dir."""
-        mock_prompts.return_value = ProjectConfig(project_name="testproject", background_tasks=BackgroundTaskType.NONE)
+        mock_prompts.return_value = ProjectConfig(
+            project_name="testproject", background_tasks=BackgroundTaskType.NONE
+        )
         mock_confirm.return_value = True
         mock_generate.return_value = tmp_path / "testproject"
 
