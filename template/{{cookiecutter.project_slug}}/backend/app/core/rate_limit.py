@@ -2,7 +2,8 @@
 """Rate limiting configuration using slowapi.
 
 Default rate limit: {{ cookiecutter.rate_limit_requests }} requests per {{ cookiecutter.rate_limit_period }} seconds.
-Override with RATE_LIMIT_REQUESTS and RATE_LIMIT_PERIOD environment variables.
+Storage: {{ cookiecutter.rate_limit_storage }}.
+Override limits with RATE_LIMIT_REQUESTS and RATE_LIMIT_PERIOD environment variables.
 """
 
 from slowapi import Limiter
@@ -36,6 +37,12 @@ def get_default_rate_limit() -> str:
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=[get_default_rate_limit()],
+{%- if cookiecutter.rate_limit_storage_redis %}
+    storage_uri=settings.REDIS_URL,
+    in_memory_fallback_enabled=True,
+{%- else %}
+    storage_uri="memory://",
+{%- endif %}
 )
 
 # Common rate limit decorators for convenience

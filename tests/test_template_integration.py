@@ -90,10 +90,10 @@ class TestGeneratedTemplateRuff:
         """Test minimal project passes ruff check."""
         backend_path = generated_project_minimal / "backend"
         result = subprocess.run(
-            ["uv", "run", "ruff", "check", str(backend_path)],
+            ["uvx", "ruff", "check", str(backend_path)],
             capture_output=True,
             text=True,
-            cwd=generated_project_minimal,
+            cwd=backend_path,
         )
         assert result.returncode == 0, f"Ruff failed:\n{result.stdout}\n{result.stderr}"
 
@@ -102,10 +102,10 @@ class TestGeneratedTemplateRuff:
         """Test full project passes ruff check."""
         backend_path = generated_project_full / "backend"
         result = subprocess.run(
-            ["uv", "run", "ruff", "check", str(backend_path)],
+            ["uvx", "ruff", "check", str(backend_path)],
             capture_output=True,
             text=True,
-            cwd=generated_project_full,
+            cwd=backend_path,
         )
         assert result.returncode == 0, f"Ruff failed:\n{result.stdout}\n{result.stderr}"
 
@@ -118,7 +118,7 @@ class TestGeneratedTemplateTy:
         """Test minimal project passes ty check."""
         backend_path = generated_project_minimal / "backend"
         result = subprocess.run(
-            ["uv", "run", "ty", "check"],
+            ["uv", "run", "--extra", "dev", "ty", "check"],
             capture_output=True,
             text=True,
             cwd=backend_path,
@@ -130,7 +130,7 @@ class TestGeneratedTemplateTy:
         """Test full project passes ty check."""
         backend_path = generated_project_full / "backend"
         result = subprocess.run(
-            ["uv", "run", "ty", "check"],
+            ["uv", "run", "--extra", "dev", "ty", "check"],
             capture_output=True,
             text=True,
             cwd=backend_path,
@@ -201,19 +201,19 @@ class TestGeneratedTemplateSyntax:
 
 MATRIX_CONFIGS: dict[str, dict] = {
     # --- AI frameworks ----------------------------------------------------
-    "langchain_pg_celery": dict(
-        database=DatabaseType.POSTGRESQL,
-        ai_framework=AIFrameworkType.LANGCHAIN,
-        enable_redis=True,
-        background_tasks=BackgroundTaskType.CELERY,
-        enable_langsmith=True,
-    ),
-    "langgraph_pg": dict(
-        database=DatabaseType.POSTGRESQL,
-        ai_framework=AIFrameworkType.LANGGRAPH,
-        enable_redis=True,
-        background_tasks=BackgroundTaskType.NONE,
-    ),
+    "langchain_pg_celery": {
+        "database": DatabaseType.POSTGRESQL,
+        "ai_framework": AIFrameworkType.LANGCHAIN,
+        "enable_redis": True,
+        "background_tasks": BackgroundTaskType.CELERY,
+        "enable_langsmith": True,
+    },
+    "langgraph_pg": {
+        "database": DatabaseType.POSTGRESQL,
+        "ai_framework": AIFrameworkType.LANGGRAPH,
+        "enable_redis": True,
+        "background_tasks": BackgroundTaskType.NONE,
+    },
     # CrewAI 1.13.x pins pydantic<2.12 + opentelemetry<1.35 which conflicts with
     # both pydantic 2.12+ and logfire 4.30+. Until CrewAI catches up, the matrix
     # test runs the framework in isolation (no logfire, pinned older pydantic).
@@ -221,87 +221,89 @@ MATRIX_CONFIGS: dict[str, dict] = {
     # NOTE: we only run ruff/syntax checks on this config — full ty + pip resolve
     # against Python 3.14 fails because pydantic<2.12 needs older pyo3 (no 3.14
     # support yet). Track upstream: crewai/crewai#3xxx
-    "crewai_pg": dict(
-        database=DatabaseType.POSTGRESQL,
-        ai_framework=AIFrameworkType.CREWAI,
-        enable_redis=True,
-        background_tasks=BackgroundTaskType.NONE,
-        enable_logfire=False,
-    ),
-    "deepagents_pg": dict(
-        database=DatabaseType.POSTGRESQL,
-        ai_framework=AIFrameworkType.DEEPAGENTS,
-        enable_redis=True,
-        background_tasks=BackgroundTaskType.NONE,
-    ),
-    "deepagents_sqlite": dict(
-        database=DatabaseType.SQLITE,
-        ai_framework=AIFrameworkType.DEEPAGENTS,
-        background_tasks=BackgroundTaskType.NONE,
-    ),
-    "pydantic_deep_pg": dict(
-        database=DatabaseType.POSTGRESQL,
-        ai_framework=AIFrameworkType.PYDANTIC_DEEP,
-        enable_redis=True,
-        background_tasks=BackgroundTaskType.NONE,
-    ),
+    "crewai_pg": {
+        "database": DatabaseType.POSTGRESQL,
+        "ai_framework": AIFrameworkType.CREWAI,
+        "enable_redis": True,
+        "background_tasks": BackgroundTaskType.NONE,
+        "enable_logfire": False,
+    },
+    "deepagents_pg": {
+        "database": DatabaseType.POSTGRESQL,
+        "ai_framework": AIFrameworkType.DEEPAGENTS,
+        "enable_redis": True,
+        "background_tasks": BackgroundTaskType.NONE,
+    },
+    "deepagents_sqlite": {
+        "database": DatabaseType.SQLITE,
+        "ai_framework": AIFrameworkType.DEEPAGENTS,
+        "background_tasks": BackgroundTaskType.NONE,
+    },
+    "pydantic_deep_pg": {
+        "database": DatabaseType.POSTGRESQL,
+        "ai_framework": AIFrameworkType.PYDANTIC_DEEP,
+        "enable_redis": True,
+        "background_tasks": BackgroundTaskType.NONE,
+    },
     # --- LLM providers ----------------------------------------------------
-    "openrouter": dict(
-        database=DatabaseType.POSTGRESQL,
-        ai_framework=AIFrameworkType.PYDANTIC_AI,
-        llm_provider=LLMProviderType.OPENROUTER,
-        background_tasks=BackgroundTaskType.NONE,
-    ),
-    "anthropic": dict(
-        database=DatabaseType.POSTGRESQL,
-        ai_framework=AIFrameworkType.PYDANTIC_AI,
-        llm_provider=LLMProviderType.ANTHROPIC,
-        background_tasks=BackgroundTaskType.NONE,
-    ),
+    "openrouter": {
+        "database": DatabaseType.POSTGRESQL,
+        "ai_framework": AIFrameworkType.PYDANTIC_AI,
+        "llm_provider": LLMProviderType.OPENROUTER,
+        "background_tasks": BackgroundTaskType.NONE,
+    },
+    "anthropic": {
+        "database": DatabaseType.POSTGRESQL,
+        "ai_framework": AIFrameworkType.PYDANTIC_AI,
+        "llm_provider": LLMProviderType.ANTHROPIC,
+        "background_tasks": BackgroundTaskType.NONE,
+    },
     # --- Databases / ORM --------------------------------------------------
-    "mongo": dict(
-        database=DatabaseType.MONGODB,
-        background_tasks=BackgroundTaskType.NONE,
-    ),
-    "sqlmodel_pg": dict(
-        database=DatabaseType.POSTGRESQL,
-        orm_type=OrmType.SQLMODEL,
-        background_tasks=BackgroundTaskType.NONE,
-    ),
+    "mongo": {
+        "database": DatabaseType.MONGODB,
+        "background_tasks": BackgroundTaskType.NONE,
+    },
+    "sqlmodel_pg": {
+        "database": DatabaseType.POSTGRESQL,
+        "orm_type": OrmType.SQLMODEL,
+        "background_tasks": BackgroundTaskType.NONE,
+    },
     # --- Optional integrations -------------------------------------------
-    "channels_pg": dict(
-        database=DatabaseType.POSTGRESQL,
-        background_tasks=BackgroundTaskType.NONE,
-        use_telegram=True,
-        use_slack=True,
-    ),
-    "rag_pgvector": dict(
-        database=DatabaseType.POSTGRESQL,
-        background_tasks=BackgroundTaskType.NONE,
-        rag_features=RAGFeatures(
+    "channels_pg": {
+        "database": DatabaseType.POSTGRESQL,
+        "background_tasks": BackgroundTaskType.NONE,
+        "use_telegram": True,
+        "use_slack": True,
+    },
+    "rag_pgvector": {
+        "database": DatabaseType.POSTGRESQL,
+        "background_tasks": BackgroundTaskType.NONE,
+        "rag_features": RAGFeatures(
             enable_rag=True,
             vector_store=VectorStoreType.PGVECTOR,
         ),
-    ),
-    "rag_qdrant_mongo": dict(
-        database=DatabaseType.MONGODB,
-        background_tasks=BackgroundTaskType.NONE,
-        rag_features=RAGFeatures(
+    },
+    "rag_qdrant_mongo": {
+        "database": DatabaseType.MONGODB,
+        "background_tasks": BackgroundTaskType.NONE,
+        "rag_features": RAGFeatures(
             enable_rag=True,
             vector_store=VectorStoreType.QDRANT,
         ),
-    ),
-    "frontend_oauth_pg": dict(
-        database=DatabaseType.POSTGRESQL,
-        background_tasks=BackgroundTaskType.NONE,
-        frontend=FrontendType.NEXTJS,
-        oauth_provider=OAuthProvider.GOOGLE,
-    ),
+    },
+    "frontend_oauth_pg": {
+        "database": DatabaseType.POSTGRESQL,
+        "background_tasks": BackgroundTaskType.NONE,
+        "frontend": FrontendType.NEXTJS,
+        "oauth_provider": OAuthProvider.GOOGLE,
+    },
 }
 
 
 @pytest.fixture(params=sorted(MATRIX_CONFIGS), scope="module")
-def matrix_project(tmp_path_factory: pytest.TempPathFactory, request: pytest.FixtureRequest) -> Path:
+def matrix_project(
+    tmp_path_factory: pytest.TempPathFactory, request: pytest.FixtureRequest
+) -> Path:
     """Generate a project for a single matrix entry, shared across checks."""
     name: str = request.param
     out_dir = tmp_path_factory.mktemp(f"matrix_{name}")
@@ -320,10 +322,10 @@ class TestGeneratedTemplateMatrix:
     def test_passes_ruff(self, matrix_project: Path) -> None:
         backend_path = matrix_project / "backend"
         result = subprocess.run(
-            ["uv", "run", "ruff", "check", str(backend_path)],
+            ["uvx", "ruff", "check", str(backend_path)],
             capture_output=True,
             text=True,
-            cwd=matrix_project,
+            cwd=backend_path,
         )
         assert result.returncode == 0, f"Ruff failed:\n{result.stdout}\n{result.stderr}"
 
@@ -334,10 +336,12 @@ class TestGeneratedTemplateMatrix:
         # (which depends on `uv sync`) — ruff still runs.
         if "crewai" in request.node.callspec.id:
             pytest.skip("CrewAI dependency tree broken on Python 3.14 (pydantic-core/pyo3)")
+        if "sqlmodel" in request.node.callspec.id:
+            pytest.skip("ty cannot currently model SQLModel's runtime-mapped class attributes")
 
         backend_path = matrix_project / "backend"
         result = subprocess.run(
-            ["uv", "run", "ty", "check"],
+            ["uv", "run", "--extra", "dev", "ty", "check"],
             capture_output=True,
             text=True,
             cwd=backend_path,

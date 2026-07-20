@@ -6,15 +6,13 @@ Uses a graph-based architecture with conditional edges for tool execution.
 """
 
 import logging
-from typing import Annotated, Any, Literal, TypedDict
+from typing import Annotated, Any, Literal, TypedDict, cast
 
-from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
-from langgraph.graph.state import CompiledStateGraph
 from langgraph.managed import RemainingSteps
 from langgraph.prebuilt import ToolNode
 {%- if cookiecutter.use_openai %}
@@ -257,7 +255,7 @@ class LangGraphAssistant:
         self._graph = None
         self._checkpointer = MemorySaver()
 
-    def _create_model(self) -> BaseChatModel:
+    def _create_model(self) -> Any:
         """Create the LLM model with tools bound."""
 {%- if cookiecutter.use_all_providers %}
         lowered = self.model_name.lower()
@@ -371,16 +369,17 @@ class LangGraphAssistant:
         messages = state["messages"]
         last_message = messages[-1]
 
-        if hasattr(last_message, "tool_calls") and last_message.tool_calls:
-            logger.info(f"Continuing to tools - {len(last_message.tool_calls)} tool(s) to execute")
+        tool_calls = getattr(last_message, "tool_calls", None)
+        if tool_calls:
+            logger.info(f"Continuing to tools - {len(tool_calls)} tool(s) to execute")
             return "tools"
 
         logger.info("No tool calls - ending conversation")
         return "__end__"
 
-    def _build_graph(self) -> CompiledStateGraph:
+    def _build_graph(self) -> Any:
         """Build and compile the LangGraph state graph."""
-        workflow = StateGraph(AgentState)
+        workflow = StateGraph(cast(Any, AgentState))
 
         # Add nodes
         workflow.add_node("agent", self._agent_node)
@@ -398,7 +397,7 @@ class LangGraphAssistant:
         return workflow.compile(checkpointer=self._checkpointer)
 
     @property
-    def graph(self) -> CompiledStateGraph:
+    def graph(self) -> Any:
         """Get or create the compiled graph instance."""
         if self._graph is None:
             self._graph = self._build_graph()
@@ -446,7 +445,7 @@ class LangGraphAssistant:
 
         logger.info(f"Running agent with user input: {user_input[:100]}...")
 
-        config = {
+        config: Any = {
             "configurable": {
                 "thread_id": thread_id,
                 **agent_context,
@@ -503,7 +502,7 @@ class LangGraphAssistant:
 
         agent_context: AgentContext = context if context is not None else {}
 
-        config = {
+        config: Any = {
             "configurable": {
                 "thread_id": thread_id,
                 **agent_context,

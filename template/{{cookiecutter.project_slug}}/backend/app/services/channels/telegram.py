@@ -231,7 +231,7 @@ class TelegramAdapter(ChannelAdapter):
         if from_user is None:
             return
 
-        chat_type: str = chat.type.value if hasattr(chat.type, "value") else str(chat.type)
+        chat_type = str(chat.type.value) if hasattr(chat.type, "value") else str(chat.type)
 
         incoming = IncomingMessage(
             platform="telegram",

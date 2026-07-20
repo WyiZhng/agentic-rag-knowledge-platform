@@ -30,7 +30,7 @@ class RateLimitStorage(Protocol):
     ) -> RateLimitResult: ...
 
 
-{%- if cookiecutter.enable_redis %}
+{%- if cookiecutter.rate_limit_storage_redis %}
 class RedisSlidingWindowStorage:
     """Sliding window log algorithm backed by Redis sorted sets."""
 
@@ -121,7 +121,7 @@ class InMemoryStorage:
 
 
 def get_storage() -> RateLimitStorage:
-{%- if cookiecutter.enable_redis %}
+{%- if cookiecutter.rate_limit_storage_redis %}
     from app.core.cache import get_redis
     try:
         redis = get_redis()
@@ -129,8 +129,10 @@ def get_storage() -> RateLimitStorage:
             return RedisSlidingWindowStorage(redis)
     except Exception:
         pass
-{%- endif %}
+    logger.warning("rate_limit_redis_unavailable_using_memory")
+{%- else %}
     logger.warning("rate_limit_using_in_memory_storage")
+{%- endif %}
     return InMemoryStorage()
 
 {%- else %}

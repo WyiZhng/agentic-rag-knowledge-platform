@@ -60,6 +60,9 @@ dependencies = [
     "alembic>=1.18.0",
 {%- endif %}
 {%- if cookiecutter.use_jwt %}
+    # Chat attachments support PDF and DOCX parsing even when RAG is disabled.
+    "pymupdf>=1.25.0",
+    "python-docx>=1.1.0",
 {%- if cookiecutter.use_jwks_idp %}
     # PyJWT[crypto] pulls in `cryptography` for RSA/ECDSA verification — needed
     # to validate IdP-issued tokens against a published JWKS.
@@ -196,6 +199,8 @@ dependencies = [
     "pydantic-ai-backend[console]>=0.2.4",
     # pydantic-ai with web search and fetch support (WebSearch, WebFetch capabilities)
     "pydantic-ai-slim[duckduckgo,web-fetch]>=1.80.0",
+    # Project workspaces use the Docker SDK for container lifecycle management.
+    "docker>=7.0.0",
 {%- endif %}
 {%- if cookiecutter.enable_rag %}
     # Vector store
@@ -234,20 +239,26 @@ dependencies = [
     "sentence-transformers>=3.0.0",
 {%- endif %}
 {%- if cookiecutter.use_all_pdf_parsers %}
+{%- if not cookiecutter.use_jwt %}
     "pymupdf>=1.25.0",
-    "pillow>=10.0.0",
     "python-docx>=1.1.0",
+{%- endif %}
+    "pillow>=10.0.0",
     "llama-cloud>=1.0.0",
     "liteparse>=0.1.0",
 {%- elif cookiecutter.use_llamaparse %}
     "llama-cloud>=1.0.0",
 {%- elif cookiecutter.use_liteparse %}
     "liteparse>=0.1.0",
+{%- if not cookiecutter.use_jwt %}
     "python-docx>=1.1.0",
+{%- endif %}
 {%- else %}
+{%- if not cookiecutter.use_jwt %}
     "pymupdf>=1.25.0",
-    "pillow>=10.0.0",
     "python-docx>=1.1.0",
+{%- endif %}
+    "pillow>=10.0.0",
 {%- endif %}
 {%- if cookiecutter.enable_google_drive_ingestion %}
     "google-api-python-client>=2.0.0",

@@ -6,7 +6,7 @@ The main conversational agent that can be extended with custom tools.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from pydantic_ai import Agent, ModelRetry{%- if cookiecutter.enable_rag %}, RunContext{%- endif %}
 from pydantic_ai.capabilities import (
@@ -57,6 +57,8 @@ from app.agents.tools.chart_tool import create_chart
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+ThinkingEffort = Literal["minimal", "low", "medium", "high", "xhigh"]
 
 {%- if cookiecutter.use_all_providers %}
 
@@ -158,7 +160,7 @@ class AssistantAgent:
         model_name: str | None = None,
         temperature: float | None = None,
         system_prompt: str | None = None,
-        thinking_effort: str | None = None,
+        thinking_effort: ThinkingEffort | None = None,
     ):
         self.model_name = model_name or settings.AI_MODEL
         # ``temperature`` stays ``None`` when caller didn't set it — don't fall
@@ -381,7 +383,7 @@ class AssistantAgent:
 
 def get_agent(
     model_name: str | None = None,
-    thinking_effort: str | None = None,
+    thinking_effort: ThinkingEffort | None = None,
     temperature: float | None = None,
 ) -> AssistantAgent:
     """Factory function to create an AssistantAgent.

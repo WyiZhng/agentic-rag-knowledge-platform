@@ -48,7 +48,7 @@ class ProjectService:
         if settings.PYDANTIC_DEEP_BACKEND_TYPE != "docker":
             return
         try:
-            import docker  # type: ignore[import]
+            import docker
 
             client = docker.from_env()
             existing = [v.name for v in client.volumes.list()]
@@ -63,7 +63,8 @@ class ProjectService:
         if settings.PYDANTIC_DEEP_BACKEND_TYPE != "docker":
             return
         try:
-            import docker  # type: ignore[import]
+            import docker
+            from docker.errors import NotFound
 
             client = docker.from_env()
             try:
@@ -71,13 +72,13 @@ class ProjectService:
                 container.stop(timeout=5)
                 container.remove(force=True)
                 logger.info("Removed Docker container %s", container_name)
-            except docker.errors.NotFound:
+            except NotFound:
                 pass
             try:
                 volume = client.volumes.get(volume_name)
                 volume.remove(force=True)
                 logger.info("Removed Docker volume %s", volume_name)
-            except docker.errors.NotFound:
+            except NotFound:
                 pass
         except Exception as exc:  # pragma: no cover
             logger.warning("Could not remove Docker resources for %s: %s", container_name, exc)
@@ -337,7 +338,7 @@ class ProjectService:
         if settings.PYDANTIC_DEEP_BACKEND_TYPE != "docker":
             return
         try:
-            import docker  # type: ignore[import]
+            import docker
 
             client = docker.from_env()
             existing = [v.name for v in client.volumes.list()]
@@ -350,19 +351,20 @@ class ProjectService:
         if settings.PYDANTIC_DEEP_BACKEND_TYPE != "docker":
             return
         try:
-            import docker  # type: ignore[import]
+            import docker
+            from docker.errors import NotFound
 
             client = docker.from_env()
             try:
                 container = client.containers.get(container_name)
                 container.stop(timeout=5)
                 container.remove(force=True)
-            except docker.errors.NotFound:
+            except NotFound:
                 pass
             try:
                 volume = client.volumes.get(volume_name)
                 volume.remove(force=True)
-            except docker.errors.NotFound:
+            except NotFound:
                 pass
         except Exception as exc:
             logger.warning("Could not remove Docker resources: %s", exc)
@@ -519,7 +521,7 @@ class ProjectService:
         if settings.PYDANTIC_DEEP_BACKEND_TYPE != "docker":
             return
         try:
-            import docker  # type: ignore[import]
+            import docker
 
             client = docker.from_env()
             existing = [v.name for v in client.volumes.list()]
@@ -532,19 +534,20 @@ class ProjectService:
         if settings.PYDANTIC_DEEP_BACKEND_TYPE != "docker":
             return
         try:
-            import docker  # type: ignore[import]
+            import docker
+            from docker.errors import NotFound
 
             client = docker.from_env()
             try:
                 container = client.containers.get(container_name)
                 container.stop(timeout=5)
                 container.remove(force=True)
-            except docker.errors.NotFound:
+            except NotFound:
                 pass
             try:
                 volume = client.volumes.get(volume_name)
                 volume.remove(force=True)
-            except docker.errors.NotFound:
+            except NotFound:
                 pass
         except Exception as exc:
             logger.warning("Could not remove Docker resources: %s", exc)

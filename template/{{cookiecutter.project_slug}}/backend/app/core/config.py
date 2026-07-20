@@ -346,7 +346,7 @@ class Settings(BaseSettings):
 {%- endif %}
     AI_TEMPERATURE: float = 0.7
     AI_THINKING_ENABLED: bool = False
-    AI_THINKING_EFFORT: str = "medium"  # "low", "medium", "high"
+    AI_THINKING_EFFORT: Literal["minimal", "low", "medium", "high", "xhigh"] = "medium"
 {%- if cookiecutter.use_all_providers %}
     AI_AVAILABLE_MODELS: list[str] = [
         # OpenAI

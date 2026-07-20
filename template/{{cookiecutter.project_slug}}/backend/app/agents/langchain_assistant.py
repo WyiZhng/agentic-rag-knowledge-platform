@@ -5,7 +5,7 @@ The main conversational agent that can be extended with custom tools.
 """
 
 import logging
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from langchain.agents import create_agent
 from langchain.agents.middleware import ModelRetryMiddleware, ToolCallLimitMiddleware, ToolRetryMiddleware
@@ -304,16 +304,20 @@ class LangChainAssistant:
         )
 {%- endif %}
 
-        return create_agent(
+        create_agent_untyped: Any = create_agent
+        return create_agent_untyped(
             model=model,
             tools=self._tools,
             system_prompt=self.system_prompt,
             context_schema=AgentContext,
-            middleware=[
-                ModelRetryMiddleware(max_retries=2),
-                ToolRetryMiddleware(max_retries=1),
-                ToolCallLimitMiddleware(run_limit=15),
-            ],
+            middleware=cast(
+                Any,
+                [
+                    ModelRetryMiddleware(max_retries=2),
+                    ToolRetryMiddleware(max_retries=1),
+                    ToolCallLimitMiddleware(run_limit=15),
+                ],
+            ),
         )
 
     @property
@@ -360,6 +364,7 @@ class LangChainAssistant:
         messages.append(HumanMessage(content=user_input))
 
         agent_context: AgentContext = context if context is not None else {}
+        run_config: Any = {"configurable": dict(agent_context)} if agent_context else None
 
         logger.info(f"Running agent with user input: {user_input[:100]}...")
 
@@ -368,14 +373,14 @@ class LangChainAssistant:
         try:
             result = await self.agent.ainvoke(
                 {"messages": messages},
-                config={"configurable": agent_context} if agent_context else None,
+                config=run_config,
             )
         finally:
             _active_kb_collections.reset(token)
 {%- else %}
         result = await self.agent.ainvoke(
             {"messages": messages},
-            config={"configurable": agent_context} if agent_context else None,
+            config=run_config,
         )
 {%- endif %}
 
@@ -415,6 +420,7 @@ class LangChainAssistant:
         messages.append(HumanMessage(content=user_input))
 
         agent_context: AgentContext = context if context is not None else {}
+        run_config: Any = {"configurable": dict(agent_context)} if agent_context else None
 
 {%- if cookiecutter.enable_teams and cookiecutter.enable_rag %}
         token = _active_kb_collections.set(agent_context.get("kb_collection_names") or [])
@@ -422,7 +428,7 @@ class LangChainAssistant:
             async for event in self.agent.astream(
                 {"messages": messages},
                 stream_mode=["messages", "updates"],
-                config={"configurable": agent_context} if agent_context else None,
+                config=run_config,
             ):
                 yield event
         finally:
@@ -431,7 +437,7 @@ class LangChainAssistant:
         async for event in self.agent.astream(
             {"messages": messages},
             stream_mode=["messages", "updates"],
-            config={"configurable": agent_context} if agent_context else None,
+            config=run_config,
         ):
             yield event
 {%- endif %}

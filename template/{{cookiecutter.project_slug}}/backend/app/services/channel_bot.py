@@ -45,8 +45,6 @@ class ChannelBotService:
             system_prompt_override=data.system_prompt_override,
 {%- if cookiecutter.use_pydantic_deep and cookiecutter.use_jwt %}
             project_id=data.project_id,
-{%- else %}
-            project_id=None,
 {%- endif %}
         )
 

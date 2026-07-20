@@ -7,7 +7,7 @@ incident; we cannot return an HTTP body for a non-HTTP scope.
 """
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -105,6 +105,6 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     Call this after creating the FastAPI application instance.
     """
-    app.add_exception_handler(AppException, app_exception_handler)
+    app.add_exception_handler(AppException, cast(Any, app_exception_handler))
     # Uncomment to catch all unhandled exceptions:
     # app.add_exception_handler(Exception, unhandled_exception_handler)

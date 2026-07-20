@@ -150,7 +150,7 @@ async def delete_non_admins(db: AsyncSession) -> int:
 
     result = await db.execute(sql_delete(User).where(User.role != "admin"))
     await db.flush()
-    return result.rowcount  # type: ignore[no-any-return, attr-defined]
+    return int(getattr(result, "rowcount", 0) or 0)
 
 
 async def has_any(db: AsyncSession) -> bool:
@@ -335,7 +335,7 @@ def delete_non_admins(db: Session) -> int:
 
     result = db.execute(sql_delete(User).where(User.role != "admin"))
     db.flush()
-    return result.rowcount  # type: ignore[no-any-return, attr-defined]
+    return int(getattr(result, "rowcount", 0) or 0)
 
 
 def has_any(db: Session) -> bool:

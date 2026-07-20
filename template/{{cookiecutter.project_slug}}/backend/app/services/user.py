@@ -4,8 +4,16 @@ Contains business logic for user operations. Uses UserRepository for database ac
 """
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
+{%- if cookiecutter.use_postgresql %}
 from uuid import UUID
+{%- endif %}
+
+{%- if cookiecutter.use_postgresql %}
+UserId = UUID
+{%- else %}
+UserId = str
+{%- endif %}
 
 {%- if cookiecutter.use_postgresql %}
 from sqlalchemy import func, select
@@ -72,7 +80,7 @@ class UserService:
         return await func(self.db, *args, **kwargs)
 {%- endif %}
 
-    async def get_by_id(self, user_id: UUID) -> User:
+    async def get_by_id(self, user_id: UserId) -> User:
         """Get user by ID.
 
         Raises:
@@ -104,11 +112,15 @@ class UserService:
 {%- if cookiecutter.use_mongodb %}
         from fastapi_pagination.ext.beanie import apaginate
 
-        return await apaginate(User)
+        return await apaginate(cast(Any, User))
 {%- else %}
         from fastapi_pagination.ext.sqlalchemy import paginate
 
+{%- if cookiecutter.use_sqlite %}
+        return paginate(self.db, user_repo.list_query())
+{%- else %}
         return await paginate(self.db, user_repo.list_query())
+{%- endif %}
 {%- endif %}
 
     async def delete_non_admins(self) -> int:
@@ -356,7 +368,7 @@ class UserService:
             raise AuthenticationError(message="User account is disabled")
         return user
 
-    async def update(self, user_id: UUID, user_in: UserUpdate) -> User:
+    async def update(self, user_id: UserId, user_in: UserUpdate) -> User:
         """Update user.
 
         Raises:
@@ -371,7 +383,7 @@ class UserService:
         return await self._repo(user_repo.update, db_user=user, update_data=update_data)
 
     async def update_avatar(
-        self, user_id: UUID, file_data: bytes, filename: str, content_type: str
+        self, user_id: UserId, file_data: bytes, filename: str, content_type: str
     ) -> User:
         """Upload or replace avatar image.
 
@@ -400,7 +412,7 @@ class UserService:
         storage_path = await storage.save(f"avatars/{user_id}", filename, file_data)
         return await self._repo(user_repo.update, db_user=user, update_data={"avatar_url": storage_path})
 
-    async def delete(self, user_id: UUID) -> User:
+    async def delete(self, user_id: UserId) -> User:
         """Delete user.
 
         Raises:
@@ -444,7 +456,11 @@ class UserService:
         if payload is None or "sub" not in payload:
             raise AuthenticationError(message="Reset link is invalid or has expired")
         try:
-            user_id = UUID(str(payload["sub"]))
+{%- if cookiecutter.use_postgresql %}
+            user_id: UserId = UUID(str(payload["sub"]))
+{%- else %}
+            user_id = str(payload["sub"])
+{%- endif %}
         except (TypeError, ValueError) as exc:
             raise AuthenticationError(
                 message="Reset link is invalid or has expired"
@@ -486,7 +502,11 @@ class UserService:
         if payload is None or "sub" not in payload:
             raise AuthenticationError(message="Magic link is invalid or has expired")
         try:
+{%- if cookiecutter.use_postgresql %}
             user_id = UUID(str(payload["sub"]))
+{%- else %}
+            user_id = str(payload["sub"])
+{%- endif %}
         except (TypeError, ValueError) as exc:
             raise AuthenticationError(
                 message="Magic link is invalid or has expired"

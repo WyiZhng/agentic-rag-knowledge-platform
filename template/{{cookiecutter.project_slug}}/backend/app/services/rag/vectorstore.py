@@ -45,6 +45,14 @@ class BaseVectorStore(ABC):
     async def get_documents(self, collection_name: str) -> list[DocumentInfo]:
         """Returns list of unique documents in a collection."""
 
+    @abstractmethod
+    async def _ensure_collection(self, name: str) -> None:
+        """Create the backing collection when it does not exist."""
+
+    @abstractmethod
+    async def close(self) -> None:
+        """Release resources held by the vector store."""
+
     async def get_document_list(self, collection_name: str) -> RAGDocumentList:
         """Returns documents as API-ready list response."""
         docs = await self.get_documents(collection_name)
@@ -220,6 +228,9 @@ class MilvusVectorStore(BaseVectorStore):
     async def list_collections(self) -> list[str]:
         result: list[str] = await self.client.list_collections()
         return result
+
+    async def close(self) -> None:
+        await self.client.close()
 {%- endif %}
 
 
@@ -282,18 +293,19 @@ class QdrantVectorStore(BaseVectorStore):
             m = re.search(r'parent_doc_id\s*==\s*"([^"]+)"', filter)
             if m:
                 qdrant_filter = Filter(must=[FieldCondition(key="parent_doc_id", match=MatchValue(value=m.group(1)))])
-        results = await self.client.search(
+        response = await self.client.query_points(
             collection_name=collection_name,
-            query_vector=query_vector,
+            query=query_vector,
             limit=limit,
             query_filter=qdrant_filter,
         )
+        results = response.points
         return [
             SearchResult(
-                content=hit.payload.get("content", ""),
+                content=(hit.payload or {}).get("content", ""),
                 score=hit.score,
-                metadata=hit.payload.get("metadata", {}),
-                parent_doc_id=hit.payload.get("parent_doc_id"),
+                metadata=(hit.payload or {}).get("metadata", {}),
+                parent_doc_id=(hit.payload or {}).get("parent_doc_id"),
             )
             for hit in results
         ]
@@ -322,7 +334,10 @@ class QdrantVectorStore(BaseVectorStore):
         await self._ensure_collection(collection_name)
         records, _ = await self.client.scroll(collection_name=collection_name, limit=10000, with_payload=True)
         results = [
-            {"parent_doc_id": r.payload.get("parent_doc_id"), "metadata": r.payload.get("metadata", {})}
+            {
+                "parent_doc_id": (r.payload or {}).get("parent_doc_id"),
+                "metadata": (r.payload or {}).get("metadata", {}),
+            }
             for r in records
         ]
         return self._group_documents(results)
@@ -330,6 +345,9 @@ class QdrantVectorStore(BaseVectorStore):
     async def list_collections(self) -> list[str]:
         collections = await self.client.get_collections()
         return [c.name for c in collections.collections]
+
+    async def close(self) -> None:
+        await self.client.close()
 {%- endif %}
 
 
@@ -465,6 +483,9 @@ class ChromaVectorStore(BaseVectorStore):
             return [c.name for c in self.client.list_collections()]
 
         return await asyncio.to_thread(_list)
+
+    async def close(self) -> None:
+        """Chroma's local client does not hold an async resource."""
 {%- endif %}
 
 
@@ -472,8 +493,7 @@ class ChromaVectorStore(BaseVectorStore):
 import json
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings as app_settings
 from app.services.rag.config import RAGSettings
@@ -500,7 +520,9 @@ class PgVectorStore(BaseVectorStore):
         self.embedder = embedding_service
         self.dim = settings.embeddings_config.dim
         self.engine = create_async_engine(app_settings.DATABASE_URL, echo=False)
-        self.async_session = sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
+        self.async_session = async_sessionmaker(
+            self.engine, class_=AsyncSession, expire_on_commit=False
+        )
 
     def _table(self, name: str) -> str:
         """Get validated table name for a collection."""
@@ -619,4 +641,7 @@ class PgVectorStore(BaseVectorStore):
                 text("SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'rag_%' AND table_schema = 'public'")
             )
             return [row[0].replace("rag_", "") for row in result.fetchall()]
+
+    async def close(self) -> None:
+        await self.engine.dispose()
 {%- endif %}

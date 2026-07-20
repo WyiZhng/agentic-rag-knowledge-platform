@@ -26,7 +26,7 @@ Configuration via settings:
 
 import logging
 from collections.abc import Callable
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from deepagents import create_deep_agent
 from deepagents.backends import StateBackend
@@ -463,7 +463,7 @@ class DeepAgentsAssistant:
                 backend=backend,
                 skills=self.skills,
                 memory=self.memory,
-                interrupt_on=self.interrupt_on,
+                interrupt_on=cast(Any, self.interrupt_on),
                 tools=DEEPAGENTS_CUSTOM_TOOLS,
             )
 
@@ -542,7 +542,7 @@ class DeepAgentsAssistant:
 
         logger.info(f"Running DeepAgents with user input: {user_input[:100]}...")
 
-        config = {
+        config: Any = {
             "configurable": {
                 "thread_id": thread_id,
                 **agent_context,
@@ -603,7 +603,7 @@ class DeepAgentsAssistant:
         """
         agent_context: AgentContext = context if context is not None else {}
 
-        config = {
+        config: Any = {
             "configurable": {
                 "thread_id": thread_id,
                 **agent_context,
@@ -678,7 +678,7 @@ class DeepAgentsAssistant:
 
         agent_context: AgentContext = context if context is not None else {}
 
-        config = {
+        config: Any = {
             "configurable": {
                 "thread_id": thread_id,
                 **agent_context,
@@ -692,8 +692,6 @@ class DeepAgentsAssistant:
 
         logger.info(f"Starting DeepAgents stream for user input: {user_input[:100]}...")
 
-        final_state: dict[str, Any] = {}
-
 {%- if cookiecutter.enable_teams and cookiecutter.enable_rag %}
         token = _active_kb_collections.set(agent_context.get("kb_collection_names") or [])
         try:
@@ -702,7 +700,6 @@ class DeepAgentsAssistant:
                 config=config,
                 stream_mode=["messages", "updates"],
             ):
-                final_state = data if stream_mode == "updates" else final_state
                 yield stream_mode, data
         finally:
             _active_kb_collections.reset(token)
@@ -712,7 +709,6 @@ class DeepAgentsAssistant:
             config=config,
             stream_mode=["messages", "updates"],
         ):
-            final_state = data if stream_mode == "updates" else final_state
             yield stream_mode, data
 {%- endif %}
 
@@ -746,7 +742,7 @@ class DeepAgentsAssistant:
         """
         agent_context: AgentContext = context if context is not None else {}
 
-        config = {
+        config: Any = {
             "configurable": {
                 "thread_id": thread_id,
                 **agent_context,

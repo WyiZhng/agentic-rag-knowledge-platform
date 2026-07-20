@@ -301,27 +301,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[{% if cookiecutter.enable_red
 {%- endif %}
 
 {%- if cookiecutter.enable_rag %}
-{%- if cookiecutter.use_milvus %}
     try:
         if "vector_store" in state:
-            await state["vector_store"].client.close()  # type: ignore[attr-defined]
+            await state["vector_store"].close()
     except Exception:
-        pass
-{%- endif %}
-{%- if cookiecutter.use_qdrant %}
-    try:
-        if "vector_store" in state:
-            await state["vector_store"].client.close()  # type: ignore[attr-defined]
-    except Exception:
-        pass
-{%- endif %}
-{%- if cookiecutter.use_pgvector %}
-    try:
-        if "vector_store" in state:
-            await state["vector_store"].engine.dispose()  # type: ignore[attr-defined]
-    except Exception:
-        pass
-{%- endif %}
+        logger.exception("Failed to close vector store")
 {%- endif %}
 
 {%- if cookiecutter.use_telegram %}
@@ -550,8 +534,13 @@ def create_app() -> FastAPI:
     from app.core.rate_limit import limiter
     from slowapi import _rate_limit_exceeded_handler
     from slowapi.errors import RateLimitExceeded
+    from slowapi.middleware import SlowAPIASGIMiddleware
+    from typing import Any, cast
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_exception_handler(
+        RateLimitExceeded, cast(Any, _rate_limit_exceeded_handler)
+    )
+    app.add_middleware(SlowAPIASGIMiddleware)
 {%- endif %}
 
 {%- if (cookiecutter.enable_admin_panel and cookiecutter.use_postgresql and cookiecutter.admin_require_auth and not cookiecutter.admin_env_disabled) or cookiecutter.enable_oauth %}

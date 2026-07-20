@@ -81,6 +81,8 @@ class RAGSyncService:
         path: str | None,
     ) -> SyncLog:
         """Persist a sync log and dispatch the local-sync task on the configured backend."""
+        if not path:
+            raise ValueError("A local source path is required")
         sync_log = await self.create_sync_log(
             source="local",
             collection_name=collection_name,

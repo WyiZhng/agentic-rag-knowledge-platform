@@ -456,7 +456,9 @@ class TestRAGCodePatterns:
         assert re.search(r"_retrieval_service", content), "rag_tool.py should use singleton pattern"
 
         # Should have get_retrieval_service function
-        assert re.search(r"def get_retrieval_service", content), "rag_tool.py should have get_retrieval_service function"
+        assert re.search(r"def get_retrieval_service", content), (
+            "rag_tool.py should have get_retrieval_service function"
+        )
 
     def test_rag_vectorstore_has_list_collections_method(self, tmp_path: Path) -> None:
         """Test that vectorstore.py has list_collections method in both base and milvus classes."""

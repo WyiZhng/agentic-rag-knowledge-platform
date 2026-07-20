@@ -200,8 +200,9 @@ class ConversationService:
                 self.db, message_ids=message_ids
             )
             for msg in conversation.messages:
-                msg.user_rating = user_ratings.get(msg.id)  # type: ignore[attr-defined]
-                msg.rating_count = rating_counts.get(msg.id)  # type: ignore[attr-defined]
+                rated_msg: Any = msg
+                rated_msg.user_rating = user_ratings.get(msg.id)
+                rated_msg.rating_count = rating_counts.get(msg.id)
 {%- endif %}
         return conversation
 

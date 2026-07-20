@@ -156,7 +156,7 @@ class PydanticDeepAssistant:
         # Allow project-scoped WS endpoint to inject a pre-built backend/history path
         self._backend_override = backend_override
         self._history_messages_path = history_messages_path
-        self._agent: Agent | None = None
+        self._agent: Agent[DeepAgentDeps, str] | None = None
         self._deps: DeepAgentDeps | None = None
 
     def _get_model_string(self) -> str:
@@ -184,9 +184,7 @@ class PydanticDeepAssistant:
             try:
                 from pydantic_ai_backends import DaytonaSandbox
 
-                return DaytonaSandbox(
-                    workspace_id=f"pd-{self.conversation_id}",
-                )
+                return DaytonaSandbox()
             except ImportError:
                 logger.warning(
                     "Daytona backend not available — "
@@ -307,7 +305,7 @@ class PydanticDeepAssistant:
     # Properties: lazy creation of agent + deps on first access
 
     @property
-    def agent(self) -> Agent:
+    def agent(self) -> Agent[DeepAgentDeps, str]:
         """Get or create the underlying pydantic-ai Agent."""
         if self._agent is None:
             self._agent, self._deps = self._build_agent_and_deps()
@@ -458,7 +456,7 @@ async def run_agent(
         Tuple of (output_text, tool_events, context).
     """
     assistant = get_agent(conversation_id=conversation_id)
-    return await assistant.run(user_input, context)
+    return await assistant.run(user_input, context=context)
 {%- else %}
 """PydanticDeep Assistant agent — not configured."""
 {%- endif %}

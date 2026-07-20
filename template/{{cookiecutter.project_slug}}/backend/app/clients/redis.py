@@ -42,7 +42,10 @@ class RedisClient:
         """Get a value by key."""
         if not self.client:
             raise RuntimeError("Redis client not connected")
-        return await self.client.get(key)  # type: ignore[no-any-return]
+        value = await self.client.get(key)
+        if isinstance(value, bytes):
+            return value.decode()
+        return value
 
     async def set(
         self,

@@ -5,6 +5,9 @@ import asyncio
 import logging
 import time
 from typing import Any
+{%- if cookiecutter.use_postgresql %}
+from uuid import UUID
+{%- endif %}
 
 from app.core.channel_crypto import decrypt_token
 from app.core.exceptions import AuthorizationError, BadRequestError
@@ -88,7 +91,7 @@ class ChannelMessageRouter:
         """
         # 1. Load bot
 {%- if cookiecutter.use_postgresql %}
-        bot = await channel_bot_repo.get_by_id(db, incoming.bot_id)
+        bot = await channel_bot_repo.get_by_id(db, UUID(incoming.bot_id))
 {%- elif cookiecutter.use_sqlite %}
         bot = channel_bot_repo.get_by_id(db, incoming.bot_id)
 {%- elif cookiecutter.use_mongodb %}

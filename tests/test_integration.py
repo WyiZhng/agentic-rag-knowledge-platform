@@ -10,6 +10,7 @@ from fastapi_gen.config import (
     CIType,
     DatabaseType,
     ProjectConfig,
+    RateLimitStorageType,
 )
 from fastapi_gen.generator import generate_project
 
@@ -176,6 +177,43 @@ class TestFullFeaturedProjectGeneration:
         """Test Docker files exist."""
         assert (full_project / "backend" / "Dockerfile").is_file()
         assert (full_project / "docker-compose.yml").is_file()
+
+
+@pytest.mark.parametrize(
+    ("storage", "enable_redis", "expected_uri"),
+    [
+        (RateLimitStorageType.MEMORY, False, 'storage_uri="memory://"'),
+        (RateLimitStorageType.REDIS, True, "storage_uri=settings.REDIS_URL"),
+    ],
+)
+def test_rate_limit_storage_is_wired_into_generated_app(
+    tmp_path: Path,
+    storage: RateLimitStorageType,
+    enable_redis: bool,
+    expected_uri: str,
+) -> None:
+    """Selected rate-limit storage must control both limiter implementations."""
+    config = ProjectConfig(
+        project_name=f"rate_limit_{storage.value}",
+        enable_rate_limiting=True,
+        rate_limit_storage=storage,
+        enable_redis=enable_redis,
+    )
+
+    project = generate_project(config, tmp_path)
+    backend_app = project / "backend" / "app"
+    limiter_content = (backend_app / "core" / "rate_limit.py").read_text()
+    main_content = (backend_app / "main.py").read_text()
+    storage_content = (backend_app / "services" / "rate_limit" / "storage.py").read_text()
+
+    assert expected_uri in limiter_content
+    assert "SlowAPIASGIMiddleware" in main_content
+    if storage == RateLimitStorageType.REDIS:
+        assert "RedisSlidingWindowStorage" in storage_content
+        assert "rate_limit_redis_unavailable_using_memory" in storage_content
+    else:
+        assert "RedisSlidingWindowStorage" not in storage_content
+        assert "rate_limit_using_in_memory_storage" in storage_content
 
 
 class TestGitLabCIProjectGeneration:

@@ -126,7 +126,10 @@ def make_rate_limit_dep(category: str):
             ...
     """
     from fastapi import Depends
-    from app.api.deps import CurrentUser, ActiveOrg
+{%- if cookiecutter.use_jwt %}
+    from app.api.deps import CurrentUser
+{%- if cookiecutter.enable_teams %}
+    from app.api.deps import ActiveOrg
 
     async def _dep(request: Request, user: CurrentUser, active_org: ActiveOrg) -> None:
         plan_features: dict | None = None
@@ -147,6 +150,21 @@ def make_rate_limit_dep(category: str):
             is_admin=getattr(user, "is_app_admin", False),
             plan_features=plan_features,
         )
+{%- else %}
+
+    async def _dep(request: Request, user: CurrentUser) -> None:
+        await check_rate_limit(
+            category=category,
+            request=request,
+            user_id=str(user.id),
+            is_admin=getattr(user, "is_app_admin", False),
+        )
+{%- endif %}
+{%- else %}
+
+    async def _dep(request: Request) -> None:
+        await check_rate_limit(category=category, request=request)
+{%- endif %}
 
     return Depends(_dep)
 

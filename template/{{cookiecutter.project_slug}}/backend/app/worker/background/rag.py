@@ -36,6 +36,8 @@ async def ingest_document_in_background(
             replace=replace,
             source_path=source_path,
         )
+        if not result.document_id:
+            raise RuntimeError("Ingestion completed without a document ID")
         async with get_db_context() as db:
             await RAGDocumentService(db).complete_ingestion(
                 rag_document_id, vector_document_id=result.document_id
